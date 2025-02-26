@@ -4,7 +4,10 @@
 //
 // Extra for Experts:
 // - describe what you did to take this project "above and beyond"
-
+// - classes/objects
+// - framerate set
+// - deltaTime shenaniganery such that it doesnt calculate wrong when you lag
+// - scroll wheel input
 
 let balls = [];
 let current_ball_radius = 20;
@@ -14,25 +17,66 @@ let windowWidth = 400;
 let windowHeight = 400;
 
 let radius;
+
+
+
+
 class Vector2 {
   constructor(x, y) { //, direction, power, weight, radius, name) {
     //direction is from 0 to 359.999, it is in degrees
     this.x = x;
     this.y = y;
     
-    
   }
+  get direction() {
+
+  }
+  CalcDirection() {
+    // x/y = x_ratio
+
+    x_ratio = this.x / this.y;
+
+  }
+  DoMath(operator, math_number) {
+    if (operator === "*" || operator === "x") { 
+      return new Vector2(this.x * math_number, this.y * math_number);
+    }
+    else if (operator === "+") {
+      return new Vector2(this.x + math_number, this.y + math_number);
+    }
+    else if (operator === "-") {
+      return new Vector2(this.x * math_number, this.y * math_number);
+    }
+    else if (operator === "/") {
+      return new Vector2(this.x / math_number, this.y / math_number);
+    }
+    else if (operator === "^") {
+      return new Vector2(this.x ^ math_number, this.y ^ math_number);
+    }
+    else if (operator === "%") { //remainder
+      return new Vector2(this.x % math_number, this.y % math_number);
+    }
+  }
+  
+}
+
+
+function DegreesToDirection(degrees) {
+
+  let vector_x = Math.cos(degrees);
+  let vector_y = Math.sin(degrees);
+  vector = new Vector2( vector_x, vector_y );
+  
 }
 
 
 
 class Ball {
-  constructor(x, y, xv, yv, weight, radius, name) {
+  constructor(x, y, velocity, weight, radius, name) {
     this.x_pos = typeof x === "undefined" ? windowWidth/2 : x;
     this.y_pos = typeof y === "undefined" ? windowHeight/2 : y;
 
-    this.x_velo = typeof xv === "undefined" ? 0 : xv;
-    this.y_velo = typeof yv === "undefined" ? 3 : yv;
+    this.velocity = velocity;
 
     this.radius = typeof radius === "undefined" ? 25 : radius;
     this.diameter = radius * 2;
@@ -59,7 +103,7 @@ class Ball {
 function setup() {
   createCanvas(windowWidth, windowHeight);
   
-  frameRate(30);
+  frameRate(60);
 }
 
 //resize balls if you use up or down keys
@@ -87,8 +131,6 @@ function updateBallPosition(ball) {
   
   
   //update velocity in the x
-  ball.total_velo.x = ball.total_velo.x + ball.total_accel.x * ball.time_existed;
-  ball.total_velo.y = ball.total_velo.y + ball.total_accel.y * ball.time_existed;
   
   
 }
@@ -98,7 +140,6 @@ function drawBalls() {
   
   for (let ball of balls) {
     
-    ball.total_accel.y = 2;
     //colors and outlines
     fill(255,30,48, 255);
     stroke("black");
