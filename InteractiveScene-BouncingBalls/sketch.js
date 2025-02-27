@@ -31,9 +31,10 @@ class Vector2 {
   get direction() {
 
   }
-  CalcDirection() {
+  CalcDirectionAngle(in_degrees) {
     // x/y = x_ratio
-
+    let angle_radians = Math.atan2(y, x);
+    let angle_degrees = angle_radians * 180 / Math.PI;
     x_ratio = this.x / this.y;
 
   }
@@ -65,6 +66,8 @@ function DegreesToDirection(degrees) {
 
   let vector_x = Math.cos(degrees);
   let vector_y = Math.sin(degrees);
+  
+
   vector = new Vector2( vector_x, vector_y );
   
 }
@@ -121,10 +124,6 @@ function updateBallSize() {
 }
 
 function checkColliding(ball) {
-
-  
-  
-  
 }
 
 function updateBallPosition(ball) {
@@ -163,10 +162,10 @@ function draw() {
   
   //draw each ball at their respective positions
   
-  if (keyIsDown(87)) {
-    let ball_name = "ball_" + balls.length.toString();
-    spawnBall(mouseX, mouseY, 0, 0, 200, current_ball_radius, ball_name);
-  }
+  // if (keyIsDown(87)) {
+  //   let ball_name = "ball_" + balls.length.toString();
+  //   spawnBall(mouseX, mouseY, 0, 0, 200, current_ball_radius, ball_name);
+  // }
   drawBalls();
   
   updateBallSize(); 
