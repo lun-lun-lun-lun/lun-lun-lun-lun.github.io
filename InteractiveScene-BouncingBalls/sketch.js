@@ -14,11 +14,28 @@ let balls = [];
 let mouse_ball_radius = 20;
 let grabbed_ball;
 
-let windowWidth = 400;
-let windowHeight = 400;
+let window_width = 400;
+let window_height = 400;
 
-let radius;
 const gravity = 5.3;
+const size_increment = 1;
+
+let commands = {
+  ["e"]: MakeNewBall,
+  ["r"]: ResetScene,
+  ["ArrowUp"]: IncreaseBallSize,
+  ["ArrowDown"]: DecreaseBallSize,
+};
+
+
+function IncreaseBallSize() {
+  
+}
+
+function DecreaseBallSize() {
+  let reasonable_size = mouse_ball_radius - 1 > 0 && mouse_ball_radius - 1 <  window_height/window_width / 2;
+  mouse_ball_radius = size_increment;
+}
 
 
 /**
@@ -27,10 +44,12 @@ const gravity = 5.3;
  * @returns { [number, number] } the x and y.
  * Recommended you let [x, y] = this_func
  */
-function DegreesToVectors(degrees) {
+function DegreesToVectors(angle_degrees) {
 
-  let vector_x = Math.cos(degrees);
-  let vector_y = Math.sin(degrees);
+
+  let angle_radians = degrees * Math.PI/180;
+  let vector_x = Math.cos(angle_radians);
+  let vector_y = Math.sin(angle_radians);
   
   return [vector_x, vector_y];
   
@@ -39,26 +58,20 @@ function DegreesToVectors(degrees) {
 
 /**
  * Has an x and y vector.
- * @class
+ * @class 
  */
 class Vector2 {
   constructor(x, y) { //, direction, power, weight, radius, name) {
     //direction is from 0 to 359.999, it is in degrees
     this.x = x;
     this.y = y;
-    
+    this.angle = Math.acos(this.x);
   }
 
   /**
  * Returns the direction angle of itself, Vector2.
  * @returns {number} The angle, in degrees.
  */
-  get angle() {
-    let angle_radians = Math.atan2(y, x);
-    let angle_degrees = angle_radians * 180 / Math.PI;
-
-    return return_degrees ? angle_degrees : angle_radians;
-  }
 
   /**
  * Does the math you specify on X AND Y of the Vector2.
@@ -89,23 +102,16 @@ class Vector2 {
 
   /**
  * Change the direction of the vector, while keeping the power the same.
- * @param {number} direction The operation you want to perform.
+ * @param {{["x"]: number, ["y"]: number}} old_direction The 
  * If you want to go in the opposire direction, dir should be this.angle + 180
  */
-  ChangeDirection(direction) {
+  ChangeDirection(new_direction) {
 
     //get direction that the new vector will be in
-    let [new_x, new_y] = DegreesToVectors(direction);
-
-
-    let strong_old_x = this.x;
-    let old_angle = this.angle;
-    let [angle_x, _] = DegreesToVectors(multiplied_angle);
-    let old_strength = multiplied_x/angle_x;
-
-    //multiply the new vector by the strength of the old vector
-    this.x = new_x; this.y = new_y; 
-    this.MathSelf("*", old_strength);
+    let strength = this.x/this.angle;
+    let [new_x, new_y] = DegreesToVectors(new_direction);
+    this.x = new_x * strength;
+    this.y = new_y * strength;
   }
   
 }
@@ -146,8 +152,7 @@ class Ball {
 
 
 function setup() {
-  createCanvas(windowWidth, windowHeight);
-  
+  createCanvas(window_width, window_height);
   frameRate(60);
 }
 
@@ -165,10 +170,19 @@ function UpdateMouseBall() {
   }
 }
 
-function checkColliding(ball) {
+
+let spawn_debounce = 0.09;
+function CheckInputs() {
+  if (keyIsPressed === true) {
+    console.log(key);
+  }
+
 }
 
-function updateBallPosition(ball) {
+function CheckColliding(ball) {
+}
+
+function UpdateBallVelocity(ball) {
   
   
   //update velocity in the x
@@ -190,22 +204,21 @@ function DrawBalls() {
     
     ball.time_existed += deltaTime/1000;
     circle(ball.x_pos, ball.y_pos, ball.diameter);
-
-    
-    updateBallPosition(ball);
-    checkColliding(ball);
   }
 }
 
 function draw() {
   background(220);
-  
   fill(25,30,40,50);
   noStroke();
-  circle(mouseX, mouseY, mouse_ball_radius*2);
-  DrawBalls();
-  UpdateMouseBall();
+  
+  CheckInputs();
   UpdateBallVelocity();
+  DrawBalls();
+
+  UpdateMouseBall();
+  circle(mouseX, mouseY, mouse_ball_radius*2);
+  
 
 
   //draw each ball at their respective positions
@@ -225,11 +238,17 @@ function spawnBall(x_pos, y_pos, x_velo, y_velo, weight, radius, name) {
   balls.push(new Ball(x_pos, y_pos, x_velo, y_velo, weight, radius, name));
 }
 
+
+function MakeNewBall() {
+  let ball_name = "ball_" + balls.length.toString();
+  spawnBall(mouseX, mouseY, 0, 10, 200, mouse_ball_radius, ball_name);
+}
+
+
 function keyPressed() {
 
   if (key === "e") {
-    let ball_name = "ball_" + balls.length.toString();
-    spawnBall(mouseX, mouseY, 0, 10, 200, current_ball_radius, ball_name);
+    
     //make a ball
   }
   if (key === "r") {
