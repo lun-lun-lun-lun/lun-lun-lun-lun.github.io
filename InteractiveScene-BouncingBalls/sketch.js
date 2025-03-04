@@ -10,33 +10,111 @@
 // - scroll wheel input
 // - docstrings
 
-let balls = [];
-let mouse_ball_radius = 20;
-let grabbed_ball;
-
 let window_width = 400;
 let window_height = 400;
 
-const gravity = 5.3;
-const size_increment = 1;
+let balls = [];
+let mouse_ball_radius = 20;
+const size_increment = 1.3;
+const MINIMUM_SIZE = 5;
+const MAXIMUM_SIZE = window_height <= window_width ? window_height/2.2 : window_width/2.2;
+
+const GRAVITY = 5.3;
+const FRAMERATE = 60;
+
+let grabbed_ball;
+let click_held = false;
 
 let commands = {
   ["e"]: MakeNewBall,
   ["r"]: ResetScene,
   ["ArrowUp"]: IncreaseBallSize,
   ["ArrowDown"]: DecreaseBallSize,
+  ["ClickHeld"]: Grab,
+  ["ClickReleased"]: LetGo,
 };
 
+/**
+ * Grabs a ball if it overlaps with the cursor.
+ */
+function Grab() {
+}
+/**
+ * Releases any grabbed balls.
+ */
+function LetGo() {
+}
 
-function IncreaseBallSize() {
+
+function spawnBall(x_pos, y_pos, x_velo, y_velo, weight, radius, name) {
+
+  //make a new ball
+  balls.push(new Ball(x_pos, y_pos, x_velo, y_velo, weight, radius, name));
+}
+
+
+function MakeNewBall() {
+  let ball_name = "ball_" + balls.length.toString();
+  spawnBall(mouseX, mouseY, 0, 10, 200, mouse_ball_radius, ball_name);
+}
+
+
+
+/**
+ * Removes all balls and returns setting to default.
+ */
+function ResetScene() {
+
+}
+
+
+//the way i did this feels wrong,
+
+/**
+ * Changes the size of the ball that will be spawned by increment.
+ * @param {number} increment the change in size.
+ */
+function ChangeBallSize(increment) {
+
   
-}
+  let new_size = mouse_ball_radius + increment;
+  let reasonable_size = new_size > MINIMUM_SIZE && new_size < MAXIMUM_SIZE;
 
+  //check that the size of the ball isnt way big or too small 
+  if (reasonable_size) {
+    mouse_ball_radius = new_size;
+  } 
+  else {
+    console.log("No big balls or small balls.");
+  }
+}
+function IncreaseBallSize() {
+  ChangeBallSize(size_increment);
+}
 function DecreaseBallSize() {
-  let reasonable_size = mouse_ball_radius - 1 > 0 && mouse_ball_radius - 1 <  window_height/window_width / 2;
-  mouse_ball_radius = size_increment;
+  ChangeBallSize(-size_increment);
 }
 
+
+
+/**
+ * If a key is pressed this frame, do the function associated with that key.
+ */
+function CheckInputs() {
+  
+
+  if (keyIsPressed === true) {
+    commands[key]();
+  }
+  if (mouseClicked === true) {
+    click_held = true;
+    commands["ClickHeld"]();
+  }
+  else if (mouseClicked === false && click_held === true) {
+    click_held = false;
+    commands["ClickReleased"]();
+  }
+}
 
 /**
  * Converts degrees into a an array of X and Y.
@@ -156,28 +234,12 @@ function setup() {
   frameRate(60);
 }
 
-//resize balls if you use up or down keys
-function UpdateMouseBall() {
-  
-  
-  if (keyIsPressed === true) {
-    if (keyCode === UP_ARROW) {
-      mouse_ball_radius += 0.35;
-    } 
-    else if (keyCode === DOWN_ARROW) {
-      mouse_ball_radius -= 0.35;
-    }
-  }
-}
+
+
 
 
 let spawn_debounce = 0.09;
-function CheckInputs() {
-  if (keyIsPressed === true) {
-    console.log(key);
-  }
 
-}
 
 function CheckColliding(ball) {
 }
@@ -212,52 +274,9 @@ function draw() {
   fill(25,30,40,50);
   noStroke();
   
-  CheckInputs();
   UpdateBallVelocity();
   DrawBalls();
-
-  UpdateMouseBall();
+  CheckInputs();
   circle(mouseX, mouseY, mouse_ball_radius*2);
-  
-
-
-  //draw each ball at their respective positions
-  
-  // if (keyIsDown(87)) {
-  //   let ball_name = "ball_" + balls.length.toString();
-  //   spawnBall(mouseX, mouseY, 0, 0, 200, mouse_ball_radius, ball_name);
-  // }
-  
-  
-  
 }
 
-function spawnBall(x_pos, y_pos, x_velo, y_velo, weight, radius, name) {
-
-  //make a new ball
-  balls.push(new Ball(x_pos, y_pos, x_velo, y_velo, weight, radius, name));
-}
-
-
-function MakeNewBall() {
-  let ball_name = "ball_" + balls.length.toString();
-  spawnBall(mouseX, mouseY, 0, 10, 200, mouse_ball_radius, ball_name);
-}
-
-
-function keyPressed() {
-
-  if (key === "e") {
-    
-    //make a ball
-  }
-  if (key === "r") {
-    //reset the scene
-  }
-  
-}
-
-function mouseClicked() {
-  //grab the balls if the mouse  is over one of them
-  //if mouse over ball pos and radius then grabbed_ball will be the ball
-}
