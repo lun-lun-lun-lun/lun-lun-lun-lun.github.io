@@ -98,6 +98,7 @@ function MakeNewBall() {
  * Removes all balls and returns setting to default.
  */
 function ResetScene() {
+  balls = [];
 }
 
 
