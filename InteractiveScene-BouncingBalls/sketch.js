@@ -9,9 +9,14 @@
 // - deltaTime shenaniganery such that it doesnt calculate wrong when you lag
 // - scroll wheel input
 // - docstrings
+// - arrays (i knew it before i promise :broken_heart:)
 
 let window_width = 400;
 let window_height = 400;
+
+let cooldown = 1
+let time_waited = 0
+let last_change = 0
 
 let balls = [];
 let mouse_ball_radius = 20;
@@ -46,16 +51,32 @@ function LetGo() {
 }
 
 
-function spawnBall(x_pos, y_pos, x_velo, y_velo, weight, radius, name) {
 
-  //make a new ball
-  balls.push(new Ball(x_pos, y_pos, x_velo, y_velo, weight, radius, name));
-}
-
-
+/**
+ * Removes all balls and returns setting to default.
+ */
 function MakeNewBall() {
-  let ball_name = "ball_" + balls.length.toString();
-  spawnBall(mouseX, mouseY, 0, 10, 200, mouse_ball_radius, ball_name);
+
+  time_waited = millis()/1000
+
+  if (time_waited >= last_change + cooldown ) {
+    console.log("success!")
+    last_change = time_waited
+
+
+    let x = mouseX
+    let y = mouseY
+    let position = new Vector2( x , y )
+    let velocity = new Vector2( random(-20,20) , random(-20,20) )
+    //generate a unique name for eacdh ball
+    let name = "ball_" + balls.length.toString();
+  
+    //if i was making something that isnt a school project i wouldnt do it like this
+    //adds a new ball to the list of balls
+    balls.push( new Ball( position, velocity, mouse_ball_radius, name ) );
+    console.log("made")
+  }
+ 
 }
 
 
@@ -64,7 +85,6 @@ function MakeNewBall() {
  * Removes all balls and returns setting to default.
  */
 function ResetScene() {
-
 }
 
 
@@ -102,19 +122,29 @@ function DecreaseBallSize() {
  */
 function CheckInputs() {
   
-
+  
   if (keyIsPressed === true) {
-    commands[key]();
+    if (key in commands) {
+      commands[key]();
+    }
+    
   }
-  if (mouseClicked === true) {
+  //mouse specific (annoying)
+  if (mouseIsPressed === true && click_held === false) {
     click_held = true;
     commands["ClickHeld"]();
+    console.log("held")
   }
-  else if (mouseClicked === false && click_held === true) {
+  else if (mouseIsPressed === false && click_held === true) {
     click_held = false;
     commands["ClickReleased"]();
+    console.log("released")
   }
 }
+
+
+
+
 
 /**
  * Converts degrees into a an array of X and Y.
@@ -202,10 +232,10 @@ class Vector2 {
 
 
 class Ball {
-  constructor(x, y, velocity, weight, radius, name) {
-    this.x_pos = typeof x === "undefined" ? windowWidth/2 : x;
-    this.y_pos = typeof y === "undefined" ? windowHeight/2 : y;
+  constructor(position, velocity, radius, name) {
 
+
+    this.position = position;
     this.velocity = velocity;
 
     this.radius = typeof radius === "undefined" ? 25 : radius;
@@ -236,11 +266,6 @@ function setup() {
 
 
 
-
-
-let spawn_debounce = 0.09;
-
-
 function CheckColliding(ball) {
 }
 
@@ -248,7 +273,10 @@ function UpdateBallVelocity(ball) {
   
   
   //update velocity in the x
-  
+  for (let ball of balls) {
+
+    ball.velocity.y -= GRAVITY
+  }
   
 }
 
@@ -259,13 +287,12 @@ function UpdateBallVelocity(ball) {
 function DrawBalls() {
   
   for (let ball of balls) {
-    
     //colors and outlines
     fill(255,30,48, 255);
     stroke("black");
     
     ball.time_existed += deltaTime/1000;
-    circle(ball.x_pos, ball.y_pos, ball.diameter);
+    circle(ball.position.x, ball.position.y, ball.diameter);
   }
 }
 
@@ -275,8 +302,11 @@ function draw() {
   noStroke();
   
   UpdateBallVelocity();
+  UpdateBallPosition();
   DrawBalls();
+
+
   CheckInputs();
-  circle(mouseX, mouseY, mouse_ball_radius*2);
+  //circle(mouseX, mouseY, mouse_ball_radius*2);
 }
 
