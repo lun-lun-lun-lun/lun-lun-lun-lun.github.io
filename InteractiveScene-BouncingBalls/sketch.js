@@ -10,21 +10,23 @@
 // - scroll wheel input
 // - docstrings
 // - arrays (i knew it before i promise :broken_heart:)
-
+//grabbing balls didnt get added, or ball to ball collisions, sadly
 let window_width = 400;
 let window_height = 400;
 
-let cooldown = 1
-let time_waited = 0
-let last_change = 0
+let cooldown = 0.05;
+let time_waited = 0;
 
-let balls = [];
+let last_change = 0;
+
+let balls = []; 
 let mouse_ball_radius = 20;
 const size_increment = 1.3;
 const MINIMUM_SIZE = 5;
 const MAXIMUM_SIZE = window_height <= window_width ? window_height/2.2 : window_width/2.2;
 
-const GRAVITY = 5.3;
+const GRAVITY = 9;
+const COLLISION_DEGRADE = 0.7;
 const FRAMERATE = 60;
 
 let grabbed_ball;
@@ -50,7 +52,18 @@ function Grab() {
 function LetGo() {
 }
 
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+  w = windowWidth;
+  h = windowHeight;
+  //min gives smallest of the two numbers
+  MAXIMUM_SIZE = min(w, h) / 2.2;
+  frameRate(FRAMERATE);
+}
 
+function mouseWheel(event) {
+  ChangeBallSize(event.delta > 0 ? -size_increment : size_increment)
+}
 
 /**
  * Removes all balls and returns setting to default.
@@ -67,7 +80,7 @@ function MakeNewBall() {
     let x = mouseX
     let y = mouseY
     let position = new Vector2( x , y )
-    let velocity = new Vector2( random(-20,20) , random(-20,20) )
+    let velocity = new Vector2( random(-300,300) , random(-300,300) )
     //generate a unique name for eacdh ball
     let name = "ball_" + balls.length.toString();
   
@@ -173,7 +186,7 @@ class Vector2 {
     //direction is from 0 to 359.999, it is in degrees
     this.x = x;
     this.y = y;
-    this.angle = Math.acos(this.x);
+    this.angle = Math.atan2(y, x);
   }
 
   /**
@@ -213,6 +226,7 @@ class Vector2 {
  * @param {{["x"]: number, ["y"]: number}} old_direction The 
  * If you want to go in the opposire direction, dir should be this.angle + 180
  */
+  //doesnt work, dont use
   ChangeDirection(new_direction) {
 
     //get direction that the new vector will be in
@@ -260,24 +274,88 @@ class Ball {
 
 
 function setup() {
-  createCanvas(window_width, window_height);
-  frameRate(60);
-}
-
-
-
-function CheckColliding(ball) {
+  createCanvas(windowWidth, windowHeight);
+  frameRate(FRAMERATE);
 }
 
 function UpdateBallVelocity(ball) {
   
-  
-  //update velocity in the x
   for (let ball of balls) {
 
     ball.velocity.y -= GRAVITY
   }
   
+}
+
+function UpdateBallPosition() {
+  
+  for (let ball of balls) {
+
+    ball.position.x = ball.position.x - ( ball.velocity.x * (deltaTime/1000) );
+    ball.position.y = ball.position.y - ( ball.velocity.y * (deltaTime/1000) );
+  }
+  
+}
+
+function CheckCollisions() {
+  
+  for (let ball of balls) {
+    CheckCollisionsWall(ball)
+    
+  }
+  
+}
+
+
+function CheckCollisionsWall(ball) {
+
+
+
+  //hit right or left wall, so we know its an x axis collision
+  if (ball.position.x - ball.radius <= 0)  {
+    ball.position.x = ball.radius;
+    ball.velocity.x *= COLLISION_DEGRADE * -1;
+  }
+  if (ball.position.x + ball.radius >= windowWidth)  {
+    ball.position.x = windowWidth - ball.radius;
+    ball.velocity.x *= COLLISION_DEGRADE * -1;
+  }
+  
+  //hit right or left wall, so we know its a y axis collision
+  if (ball.position.y - ball.radius <= 0)  {
+    ball.position.y = ball.radius;
+    ball.velocity.y *= COLLISION_DEGRADE * -1;
+  }
+  if (ball.position.y + ball.radius >= windowHeight)  {
+    ball.position.y = windowHeight - ball.radius;
+    ball.velocity.y *= COLLISION_DEGRADE * -1;
+  }
+}
+
+//I have quickly found that this is more complicated than im having fun with right now, and I want to sleep.
+//sorry, next time i'll make something i enjoy
+function CheckCollisionsOtherBalls(a_ball) {
+    
+  for (let b_ball of balls) {
+    
+    
+    //saw the distance calc online but it makes sense
+    let xa = Math.abs(a_ball.position.x - b_ball.position.x)
+    let ya = Math.abs(a_ball.position.y - b_ball.position.y)
+    let distance =  Math.sqrt( xa*xa + ya*ya )
+    if ( b_ball.radius <= distance )  {
+      //a is goin left
+      let new_dir = Math.atan2(ya, xa)
+      if (a_ball.position.y > b_ball.position.y) {
+        
+      }
+      if (a_ball.position.x < b_ball.position.x) {
+        
+      }
+      //a is goin down
+      
+    }
+  }
 }
 
 /**
@@ -307,6 +385,7 @@ function draw() {
 
 
   CheckInputs();
+  CheckCollisions();
   //circle(mouseX, mouseY, mouse_ball_radius*2);
 }
 
