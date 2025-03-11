@@ -1,16 +1,26 @@
 let shared;
 //p5.party doesnt work in this way, but this close to the way that im used to
+//note to self: make squid game next time?
 let playerTemplate = {
-    name: "none",
-    moveSpeed: 100,
-    currentHealth: 100,
-    maxHealth: 100,
-    bulletSize: 100,
-    bulletSpeed: 100,
-    bulletPen: 100,
-    fireRate: 100,
+    id: 0,
+    x_position: 0,
+    y_position: 0,
+    moveSpeed:      100,
+    currentHealth:  100,
+    maxHealth:      100,
+    swordLength:    100,
+    
+    upgrades: {
+      //maximu
+      health:         0,
+      range:          0,
+      speed:          0,
+      damage:         0,
+      defense:        0,
+    }
     
 }
+
 
 
 function preload() {
@@ -42,19 +52,21 @@ function setup() {
   createCanvas(400, 400);
   noStroke();
   console.log(partyIsHost())
+  let totalPlayers = Object.keys(shared.players).length;
+  let newPlayer = structuredClone(playerTemplate);
+  newPlayer.id = totalPlayers+1
   
+  shared.players[totalPlayers+1] = newPlayer
 }
 
 function mousePressed() {
-  shared.x = mouseX;
-  shared.y = mouseY;
-  // shared.players = {
-  //   "ol": 1,
-  //
+  // shared.x = mouseX;
+  // shared.y = mouseY;
+  // // shared.players = {
+  // //   "ol": 1,
+  // //
   
-  console.log(Object.keys(shared.players).length)
-  shared.players["hi"] = 5
-  console.log(shared.players);
+  // console.log(shared.players);
 }
 
 function draw() {
