@@ -12,6 +12,7 @@ let playerTemplate = {
     
 }
 
+
 function preload() {
     partyConnect(
 		"wss://demoserver.p5party.org", 
@@ -31,7 +32,7 @@ function preload() {
         x: 100, 
         y: 100,
         players: {
-            hi: "nooo"
+          "ol": 1,
         },
     }
 );
@@ -41,13 +42,19 @@ function setup() {
   createCanvas(400, 400);
   noStroke();
   console.log(partyIsHost())
-  players.push()
+  
 }
 
 function mousePressed() {
   shared.x = mouseX;
   shared.y = mouseY;
-  console.log(shared.players.hi)
+  // shared.players = {
+  //   "ol": 1,
+  //
+  
+  console.log(Object.keys(shared.players).length)
+  shared.players["hi"] = 5
+  console.log(shared.players);
 }
 
 function draw() {
