@@ -5,6 +5,9 @@
 
 
 
+
+
+
 let shared;
 //i do not expect 456 people. its just canon to the show.
 const MAX_PLAYERS = 456;
@@ -12,43 +15,27 @@ const MAX_PLAYERS = 456;
 //p5.party doesnt work in this way, but this close to the way that im used to
 //note to self: make squid game next time?
 let playerTemplate = {
-    id:             0,
+
     name:           "",
+
+    currentHealth:  100,
     x_position:     0,
     y_position:     0,
+
     moveSpeed:      100,
-    currentHealth:  100,
     maxHealth:      100,
     strength:       100,
-    // swordLength:    100,
-    
-    // upgrades: {
-    //   //maximu
-    //   health:         0,
-    //   range:          0,
-    //   speed:          0,
-    //   damage:         0,
-    //   defense:        0,
-    // }
     
 }
+let me, guests;
 
 //gets a unique name from a list
 function getUniqueName(folder) {
 
-  let name = toString(random(1,MAX_PLAYERS));
+  let name = Math.round(random(1,MAX_PLAYERS));
 
-  for (let person of folder) {
-    if (person["name"] === name) {
-      return getUniqueName(folder)
-    }
-  }
-
-  let length = name.length;
-  if (length === 2) {
-    name = "0"+name
-  } else if (length === 1) {
-    name = "00"+name
+  if (folder[name]) {
+    return getUniqueName(folder)
   }
 
   return name
@@ -60,30 +47,42 @@ function preload() {
 		"wss://demoserver.p5party.org", 
 		"hello_party"
 	);
-
-    //make the game host reset allll the values
-    if (partyIsHost()) {
-		partySetShared(shared, {
-            x: 0, 
-            y: 0
-        });
-	}
-    shared = partyLoadShared(
-    "global", 
+  if (partyIsHost()) {
+    // partySetShared(shared, {
+    //     players: [],
+    // });
+  }
+  guests = partyLoadGuestShareds();
+  me = partyLoadMyShared(
     { 
-        x: 5, 
-        y: 5,
-        players: {},
+      name:           "",
+      currentHealth:  100,
+      x_position:     0,
+      y_position:     0,
+
+      moveSpeed:      100,
+      maxHealth:      100,
+      strength:       100,
     }
-);
+  );
+    //make the game host reset allll the values
+  
+	// }
+  // shared = partyLoadMyShared(
+  //   "shared", 
+  //   { 
+  //     x: 1,
+  //     y: 2,
+  //     players: [],
+  //   },
+  // );
 }
 
 function setup() {
   createCanvas(400, 400);
   noStroke();
-
-  
-
+  console.log(partyLoadGuestShareds())
+  //addNewUser()
   
 
 
@@ -94,19 +93,14 @@ function setup() {
   // shared.players[totalPlayers+1] = newPlayer
 }
 
-function addNewUser() {
-  let players = shared.players;
-  let amountPlayers = Object.keys(players).length;
-  let id = amountPlayers+1
-  let newUser = structuredClone(playerTemplate);
-
-  newUser.name = getUniqueName(folder)
-  players[id] = newUser
+//need to rework to fit new loadguestsshared thing
+function SetUserData() {
+  me.name = 
 }
 
 function mousePressed() {
   console.log(partyIsHost())
-  console.log(shared.players)
+  console.log(partyLoadMyShared())
   // shared.x = mouseX;
   // shared.y = mouseY;
   // // shared.players = {
@@ -120,5 +114,5 @@ function draw() {
   background("#ffcccc");
   fill("#000066");
 
-  ellipse(shared.x, shared.y, 100, 100);
+  //ellipse(shared.x, shared.y, 100, 100);
 }
