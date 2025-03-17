@@ -36,18 +36,20 @@ const PLAYER_TEMPLATE = {
     moveSpeed:      100,
     maxHealth:      100,
     strength:       100,
+    movementState:  "Idle",
+    actionState:    "Idle",
 }
 
 const KEYBINDS = {
-  W: 0, //move
-  A: 0, //move
-  S: 0, //move
-  D: 0, //move
+  W: {func: MovePlayer, args: [0, 1]}, //move
+  A: {func: MovePlayer, args: [1, 0]},
+  S: {func: MovePlayer, args: [0, -1]},
+  D: {func: MovePlayer, args: [-1, 0]},
 
   MouseButtonOne: 0, //push
 }
 
-
+let idk = [];
 let me, guests;
 let oldGuestList = [];
 
@@ -71,14 +73,17 @@ function MakeNewPlayer() {
   return myPlayer
 }
 
-
+function MovePlayer(player, x_dir, y_dir) {
+  player.x += player.moveSpeed * x_dir
+  player.y += player.moveSpeed * y_dir
+}
 
 function preload() {
   partyConnect("wss://demoserver.p5party.org", "hello_party");
   if (partyIsHost()) {
-    // partySetShared(shared, {
-    //     players: [],
-    // });
+    partySetShared(shared, {
+        new_join: [],
+    });
   }
   guests = partyLoadGuestShareds();
   
@@ -90,10 +95,6 @@ function setup() {
   noStroke();
 
   oldGuestList = JSON.parse(JSON.stringify(guests))
-
-  console.log(oldGuestList)
-  
-  console.log(_.isEqual(oldGuestList[0], guests[0]))
 }
 
 
@@ -116,7 +117,12 @@ function draw() {
   drawSpectators()
   drawPlayers()
   trackGuests()
-
+  if (keyIsPressed === true) {
+    console.log(key)
+  }
+  for (let player of guests) {
+    circle(player.x_position, player.y_position, 20)
+  }
   //ellipse(shared.x, shared.y, 100, 100);
 }
 
@@ -124,9 +130,11 @@ function trackGuests() {
   //track when people leave
   for (let i = 0; i<oldGuestList.length; i++) {
     if ( !(_.isEqual(oldGuestList[i], guests[i])) ) {
-      console.log("A player left the game.")
+      console.log(i)
+      console.log("A player left or joined the game.")
     }
   }
+  
 
   //seen online for copying proxy arrays
   oldGuestList = JSON.parse(JSON.stringify(guests))

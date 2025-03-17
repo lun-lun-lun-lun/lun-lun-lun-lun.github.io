@@ -5,6 +5,7 @@
 - [Generative Art](04-art)
 - [Perlin Noise Demo](05-perlin)
 - [Terrain Gen](06-terrain)
+- [Bubbles](07-bubbles)
 
 # cs30 Projects
 - [Interactive Scene](InteractiveScene-BouncingBalls)
