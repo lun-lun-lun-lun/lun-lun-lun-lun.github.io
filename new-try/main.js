@@ -1,9 +1,9 @@
-// -todo
-//get players moving on the screen
-//when im done I need to annotate all the funcs with what they do
-//dont do typecheck early like last time
-//loadash
+// Red Light Green Light
+// todo: add onRelease, reoganize keybinds, add pushing, make the actual minigame
+// should make red pop up on the screen, but get less and less visible each time it pops up
+// short scene for players that lose
 
+// 
 
 
 
@@ -21,6 +21,9 @@ const MAX_MOVE_SPEED = 1.5;
 //pushing force multiplier, punching damage multiplier
 const MIN_STRENGTH = 0.5;
 const MAX_STRENGTH = 1.5;
+
+//like friction. your velocity is multiplied by this each frame, if not constantly set
+const GROUND_GRIP = 0.9;
 // //influences what you can roll
 // const MIN_LUCK = 0;
 // const MAX_LUCK = 3;
@@ -28,44 +31,64 @@ const MAX_STRENGTH = 1.5;
 //ctrl i for modmenu
 //p5.party doesnt work in this way, but this close to the way that im used to
 //note to self: make diep.io next time?
-const PLAYER_TEMPLATE = {
-    name:           "",
-    currentHealth:  100,
-    x_position:     0,
-    y_position:     0,
-    moveSpeed:      100,
-    maxHealth:      100,
-    strength:       100,
-    movementState:  "Idle",
-    actionState:    "Idle",
-}
 
-const KEYBINDS = {
-  W: {func: MovePlayer, args: [0, 1]}, //move
-  A: {func: MovePlayer, args: [1, 0]},
-  S: {func: MovePlayer, args: [0, -1]},
-  D: {func: MovePlayer, args: [-1, 0]},
+//seconds
+const TIME = 90;
+const START_WAIT_TIME = 30;
 
-  MouseButtonOne: 0, //push
-}
+//seconds
+let timeLeft = 60; 
+
+const KEYBINDS = [
+  //W, move up
+  {code: 87, onHold: PlayerMove, args: [0, -1], cooldown: 0, lastUsed: 0, held: false}, 
+  //A, move left
+  {code: 65, onHold: PlayerMove, args: [-1, 0], cooldown: 0, lastUsed: 0},
+  //S, move down
+  {code: 83, onHold: PlayerMove, args: [0, 1], cooldown: 0, lastUsed: 0},
+  //D, move right
+  {code: 68, onHold: PlayerMove, args: [1, 0], cooldown: 0, lastUsed: 0},
+  //Space, push/dash
+  {code: 32, onHold: PlayerMove, args: [1, 0], cooldown: 5, lastUsed: 0},
+]
 
 let idk = [];
 let me, guests;
 let oldGuestList = [];
 
+
+//detect players leaving the game
+window.addEventListener("beforeunload", function (e) {
+
+  // var confirmationMessage = "\o/";
+
+  // (e || window.event).returnValue = confirmationMessage; //Gecko + IE
+  // return confirmationMessage;                            //Webkit, Safari, Chrome
+});
+
 //creates a new player with randomized stats.
 function MakeNewPlayer() {
 
   //clone the template so it can be edited
-  let myPlayer = structuredClone(PLAYER_TEMPLATE);
+  let myPlayer = {};
+
+  //"idle" or "moving" or "pushing" or "stunned"
+  myPlayer.state = "idle"; 
+
 
   //assign random values to most things
   myPlayer.name = Math.round(random(1,MAX_PLAYERS)).toString();
   myPlayer.x_position = width/2;
   myPlayer.y_position = height/2;
 
+
+  myPlayer.x_velocity = 0;
+  myPlayer.y_velocity = 0;
+
+
   myPlayer.maxHealth = Math.round(random(MIN_HEALTH, MAX_HEALTH));
   myPlayer.currentHealth = myPlayer.maxHealth;
+
 
   myPlayer.moveSpeed = Math.round(random(MIN_MOVE_SPEED, MAX_MOVE_SPEED) * 100) /100;
   myPlayer.strength = Math.round(random(MIN_STRENGTH, MAX_STRENGTH) * 100) / 100;
@@ -73,9 +96,17 @@ function MakeNewPlayer() {
   return myPlayer
 }
 
-function MovePlayer(player, x_dir, y_dir) {
-  player.x += player.moveSpeed * x_dir
-  player.y += player.moveSpeed * y_dir
+
+
+
+function PlayerMove(player, x_dir, y_dir) {
+  player.x_position += player.moveSpeed * x_dir
+  player.y_position += player.moveSpeed * y_dir
+}
+
+function PlayerShove(player, x_dir, y_dir) {
+  player.x_position += player.moveSpeed * x_dir
+  player.y_position += player.moveSpeed * y_dir
 }
 
 function preload() {
@@ -109,42 +140,66 @@ function mousePressed() {
 
 
 function draw() {
-  background("#ffcccc");
-  fill("#000066");
+  background("#4ceda5");
 
   
-
+  checkKeyPresses()
   drawSpectators()
   drawPlayers()
   trackGuests()
-  if (keyIsPressed === true) {
-    console.log(key)
-  }
-  for (let player of guests) {
-    circle(player.x_position, player.y_position, 20)
-  }
+  checkCollisions()
+  
+  
   //ellipse(shared.x, shared.y, 100, 100);
 }
 
-function trackGuests() {
-  //track when people leave
-  for (let i = 0; i<oldGuestList.length; i++) {
-    if ( !(_.isEqual(oldGuestList[i], guests[i])) ) {
-      console.log(i)
-      console.log("A player left or joined the game.")
+function checkCollisions() {
+
+}
+
+function checkKeyPresses() {
+  for (let keybind of KEYBINDS) {
+    if (keyIsDown(keybind.code)) {
+      keybind.onHold(me, ...keybind.args)
+      keybind.held = true
+    //key was released
+    } else if (keybind.held == true) {
+      console.log("key released")
+      keybind.held = false
     }
   }
+
+
+}
+
+//scrapped
+function trackGuests() {
+  //track when people leave
+  // for (let i = 0; i<oldGuestList.length; i++) {
+  //   if ( !(_.isEqual(oldGuestList[i], guests[i])) ) {
+  //     console.log(i)
+  //     console.log("A player left or joined the game.")
+  //   }
+  // }
   
 
-  //seen online for copying proxy arrays
-  oldGuestList = JSON.parse(JSON.stringify(guests))
+  // //seen online for copying proxy arrays
+  // oldGuestList = JSON.parse(JSON.stringify(guests))
 
   
 }
 
 
 function drawPlayers() {
-
+  for (let player of guests) {
+    fill("#616975")
+    circle(player.x_position, player.y_position, player.strength * 40)
+    fill("White")
+    textSize(15 * player.strength)
+    textAlign(CENTER, CENTER)
+    let x = player.x_position
+    text(player.name, x, player.y_position,)
+  }
 }
 
 function drawSpectators() {
