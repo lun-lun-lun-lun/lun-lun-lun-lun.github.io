@@ -1,14 +1,23 @@
 // Red Light Green Light
-// todo: add onRelease, reoganize keybinds, add pushing, make the actual minigame
+// Laeron Lewis
+// March 20th, 2025
+
+// Extra For Experts:
+// held and release keys
+// does const count? i forgot if we covered it
+// Screen scrolling
+// Multiplayer
+
+// To Do:
+// add onRelease, reoganize keybinds, add pushing, make the actual minigame
 // should make red pop up on the screen, but get less and less visible each time it pops up
 // short scene for players that lose
 
-// 
-
-
-
 
 let shared;
+
+const WINDOW_WIDTH = 800
+const WINDOW_HEIGHT = 400
 //i do not expect 456 people. its just canon to the show.
 const MAX_PLAYERS = 456;
 
@@ -16,21 +25,16 @@ const MAX_PLAYERS = 456;
 const MIN_HEALTH = 50;
 const MAX_HEALTH = 150;
 //walkspeed multiplier
-const MIN_MOVE_SPEED = 0.5;
-const MAX_MOVE_SPEED = 1.5;
+const MIN_MOVE_SPEED = 5;
+const MAX_MOVE_SPEED = 10;
 //pushing force multiplier, punching damage multiplier
 const MIN_STRENGTH = 0.5;
 const MAX_STRENGTH = 1.5;
 
-//like friction. your velocity is multiplied by this each frame, if not constantly set
-const GROUND_GRIP = 0.9;
-// //influences what you can roll
-// const MIN_LUCK = 0;
-// const MAX_LUCK = 3;
+//your velocity is multiplied  by this each frame, if not constantly set
+const FRICTION = 1;
 
 //ctrl i for modmenu
-//p5.party doesnt work in this way, but this close to the way that im used to
-//note to self: make diep.io next time?
 
 //seconds
 const TIME = 90;
@@ -40,16 +44,48 @@ const START_WAIT_TIME = 30;
 let timeLeft = 60; 
 
 const KEYBINDS = [
-  //W, move up
-  {code: 87, onHold: PlayerMove, args: [0, -1], cooldown: 0, lastUsed: 0, held: false}, 
-  //A, move left
-  {code: 65, onHold: PlayerMove, args: [-1, 0], cooldown: 0, lastUsed: 0},
-  //S, move down
-  {code: 83, onHold: PlayerMove, args: [0, 1], cooldown: 0, lastUsed: 0},
-  //D, move right
-  {code: 68, onHold: PlayerMove, args: [1, 0], cooldown: 0, lastUsed: 0},
-  //Space, push/dash
-  {code: 32, onHold: PlayerMove, args: [1, 0], cooldown: 5, lastUsed: 0},
+  //W = 87, move up
+  {code: 87,  onHold: {func: PlayerMove, args: [0, -1], cooldown: 0, lastUsed: 0}, 
+              onRelease: undefined,
+              held: false}, 
+  //A = 65, move left
+  {code: 65,  onHold: {func: PlayerMove, args: [-1, 0], cooldown: 0, lastUsed: 0}, 
+              onRelease: undefined,
+              held: false},
+  // {code: 65, onHold: PlayerMove, args: [-1, 0], cooldown: 0, lastUsed: 0},
+  //S = 83, move down
+  {code: 83,  onHold: {func: PlayerMove, args: [0, 1], cooldown: 0, lastUsed: 0}, 
+              onRelease: undefined,
+              held: false},
+  // {code: 83, onHold: PlayerMove, args: [0, 1], cooldown: 0, lastUsed: 0},
+  //D = 68, move right
+  {code: 68,  onHold: {func: PlayerMove, args: [1, 0], cooldown: 0, lastUsed: 0}, 
+              onRelease: undefined,
+              held: false},
+  // {code: 68, onHold: PlayerMove, args: [1, 0], cooldown: 0, lastUsed: 0},
+  //Space = 32, push
+  {code: 32,  onHold: {func: PlayerChargeShove, args: [], cooldown: 5, lastUsed: 0}, 
+              onRelease: {func: PlayerUseShove, args: [], cooldown: 0, lastUsed: 0},
+              held: false},
+  // {code: 32, onHold: PlayerShove, args: [1, 0], cooldown: 5, lastUsed: 0},
+]
+
+//they dont move, so they dont need to be a let variable
+//could make the bodies immoveables?
+const IMMOVABLES = [
+
+  //left wall |-
+  {x: 0, y: 0, width: 1, height: WINDOW_HEIGHT},
+
+  //right wall -\
+  {x: WINDOW_WIDTH, y: 0, width: 1, height: WINDOW_HEIGHT},
+
+  //bottom wall \____|
+  {x: 0, y: 0, width: WINDOW_WIDTH, height: 1},
+
+  //top wall |----\
+  {x: 0, y: WINDOW_HEIGHT, width: WINDOW_WIDTH, height: 1},
+  
 ]
 
 let idk = [];
@@ -59,7 +95,7 @@ let oldGuestList = [];
 
 //detect players leaving the game
 window.addEventListener("beforeunload", function (e) {
-
+  //cleanup
   // var confirmationMessage = "\o/";
 
   // (e || window.event).returnValue = confirmationMessage; //Gecko + IE
@@ -99,14 +135,29 @@ function MakeNewPlayer() {
 
 
 
-function PlayerMove(player, x_dir, y_dir) {
-  player.x_position += player.moveSpeed * x_dir
-  player.y_position += player.moveSpeed * y_dir
+function PlayerMove(moving_player, x_dir, y_dir) {
+  moving_player.x_velocity = (x_dir != 0) ? moving_player.moveSpeed * x_dir : moving_player.x_velocity;
+
+  moving_player.y_velocity = (y_dir != 0) ? moving_player.moveSpeed * y_dir : moving_player.y_velocity;
 }
 
-function PlayerShove(player, x_dir, y_dir) {
-  player.x_position += player.moveSpeed * x_dir
-  player.y_position += player.moveSpeed * y_dir
+function PlayerStop(moving_player, x_dir, y_dir) {
+  moving_player.x_velocity = moving_player.moveSpeed * x_dir
+  moving_player.y_velocity = moving_player.moveSpeed * y_dir
+}
+
+function PlayerChargeShove(player) {
+
+
+  // player.x_velocity = player.moveSpeed * x_dir
+  // player.y_velocity = player.moveSpeed * y_dir
+}
+
+function PlayerUseShove(player) {
+
+
+  // player.x_velocity = player.moveSpeed * x_dir
+  // player.y_velocity = player.moveSpeed * y_dir
 }
 
 function preload() {
@@ -122,7 +173,7 @@ function preload() {
 }
 
 function setup() {
-  createCanvas(800, 800);
+  createCanvas(WINDOW_WIDTH, WINDOW_HEIGHT);
   noStroke();
 
   oldGuestList = JSON.parse(JSON.stringify(guests))
@@ -144,27 +195,46 @@ function draw() {
 
   
   checkKeyPresses()
+  calculatePhysics(deltaTime)
   drawSpectators()
   drawPlayers()
-  trackGuests()
-  checkCollisions()
   
   
   //ellipse(shared.x, shared.y, 100, 100);
 }
 
-function checkCollisions() {
+function calculatePhysics(deltaTime) {
+  for (let player of guests) {
+    //find a way to always bring a number closer to 0
+    player.x_velocity = Math.abs(player.x_velocity) - FRICTION > 0 ? player.x_velocity - FRICTION : 0
+    player.y_velocity = Math.abs(player.y_velocity) - FRICTION > 0 ? player.y_velocity - FRICTION : 0
 
+
+    player.x_position += player.x_velocity
+    player.y_position += player.y_velocity
+
+    
+  }
 }
 
 function checkKeyPresses() {
   for (let keybind of KEYBINDS) {
     if (keyIsDown(keybind.code)) {
-      keybind.onHold(me, ...keybind.args)
+      console.log(keybind.code)
+      let onHold = keybind.onHold
+      
+      if (typeof onHold === 'undefined' === false) {
+        
+        onHold.func(me, ...onHold.args)
+      }
       keybind.held = true
     //key was released
     } else if (keybind.held == true) {
-      console.log("key released")
+
+      let onRelease = keybind.onRelease
+      if (typeof onHold === 'undefined' === false) {
+        onRelease.func(me, ...onRelease.args)
+      }
       keybind.held = false
     }
   }
@@ -173,20 +243,8 @@ function checkKeyPresses() {
 }
 
 //scrapped
-function trackGuests() {
-  //track when people leave
-  // for (let i = 0; i<oldGuestList.length; i++) {
-  //   if ( !(_.isEqual(oldGuestList[i], guests[i])) ) {
-  //     console.log(i)
-  //     console.log("A player left or joined the game.")
-  //   }
-  // }
-  
+function checkCollisions() {
 
-  // //seen online for copying proxy arrays
-  // oldGuestList = JSON.parse(JSON.stringify(guests))
-
-  
 }
 
 
