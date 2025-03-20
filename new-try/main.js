@@ -13,7 +13,6 @@
 // should make red pop up on the screen, but get less and less visible each time it pops up
 // short scene for players that lose
 
-
 let shared;
 
 const WINDOW_WIDTH = 800
@@ -25,14 +24,15 @@ const MAX_PLAYERS = 456;
 const MIN_HEALTH = 50;
 const MAX_HEALTH = 150;
 //walkspeed multiplier
-const MIN_MOVE_SPEED = 5;
-const MAX_MOVE_SPEED = 10;
+const MIN_MOVE_SPEED = 0.15;
+const MAX_MOVE_SPEED = 0.3;
+const MAX_VELOCITY = 50;
 //pushing force multiplier, punching damage multiplier
-const MIN_STRENGTH = 0.5;
-const MAX_STRENGTH = 1.5;
+const MIN_STRENGTH = 0.7;
+const MAX_STRENGTH = 1.3;
 
 //your velocity is multiplied  by this each frame, if not constantly set
-const FRICTION = 1;
+const FRICTION = 0.945;
 
 //ctrl i for modmenu
 
@@ -114,8 +114,8 @@ function MakeNewPlayer() {
 
   //assign random values to most things
   myPlayer.name = Math.round(random(1,MAX_PLAYERS)).toString();
-  myPlayer.x_position = width/2;
-  myPlayer.y_position = height/2;
+  myPlayer.x_position = WINDOW_WIDTH/2;
+  myPlayer.y_position = WINDOW_HEIGHT/2;
 
 
   myPlayer.x_velocity = 0;
@@ -136,9 +136,19 @@ function MakeNewPlayer() {
 
 
 function PlayerMove(moving_player, x_dir, y_dir) {
-  moving_player.x_velocity = (x_dir != 0) ? moving_player.moveSpeed * x_dir : moving_player.x_velocity;
+  let delta = deltaTime/10
+  moving_player.x_velocity = 
+  (x_dir != 0) ? 
+  moving_player.x_velocity + moving_player.moveSpeed * x_dir * delta
+  : 
+  moving_player.x_velocity;
 
-  moving_player.y_velocity = (y_dir != 0) ? moving_player.moveSpeed * y_dir : moving_player.y_velocity;
+
+  moving_player.y_velocity = 
+  (y_dir != 0) ? 
+  moving_player.y_velocity + moving_player.moveSpeed * y_dir * delta 
+  : 
+  moving_player.y_velocity;
 }
 
 function PlayerStop(moving_player, x_dir, y_dir) {
@@ -153,11 +163,11 @@ function PlayerChargeShove(player) {
   // player.y_velocity = player.moveSpeed * y_dir
 }
 
-function PlayerUseShove(player) {
+function PlayerUseShove(shoving_player) {
+  for (let player of guests) {
+    
+  }
 
-
-  // player.x_velocity = player.moveSpeed * x_dir
-  // player.y_velocity = player.moveSpeed * y_dir
 }
 
 function preload() {
@@ -193,9 +203,11 @@ function mousePressed() {
 function draw() {
   background("#4ceda5");
 
-  
+
   checkKeyPresses()
+  LimitVelocity()
   calculatePhysics(deltaTime)
+  
   drawSpectators()
   drawPlayers()
   
@@ -203,24 +215,42 @@ function draw() {
   //ellipse(shared.x, shared.y, 100, 100);
 }
 
+
+function safeMath(num){
+  return Math.abs(num) < 1 ? 0 :num
+}
+
+//smoooth movement 
 function calculatePhysics(deltaTime) {
-  for (let player of guests) {
-    //find a way to always bring a number closer to 0
-    player.x_velocity = Math.abs(player.x_velocity) - FRICTION > 0 ? player.x_velocity - FRICTION : 0
-    player.y_velocity = Math.abs(player.y_velocity) - FRICTION > 0 ? player.y_velocity - FRICTION : 0
+  me.x_velocity *= FRICTION
+  me.y_velocity *= FRICTION
+  me.x_position += me.x_velocity
+  me.y_position += me.y_velocity
 
+  // for (let player of guests) {
+  //   //find a way to always bring a number closer to 0
+  //   player.x_velocity *= FRICTION
+  //   player.y_velocity *= FRICTION
+  //   // player.x_velocity = safeMath(player.x_velocity - Math.sign(player.x_velocity) * FRICTION)
+  //   // player.y_velocity = safeMath(player.y_velocity - Math.sign(player.y_velocity) * FRICTION)
+  //   // console.log(player.x_velocity)
+  //   // console.log(player.y_velocity)
 
-    player.x_position += player.x_velocity
-    player.y_position += player.y_velocity
+  //   player.x_position += player.x_velocity
+  //   player.y_position += player.y_velocity
 
     
-  }
+  // }
+}
+
+function LimitVelocity() {
+
+  
 }
 
 function checkKeyPresses() {
   for (let keybind of KEYBINDS) {
     if (keyIsDown(keybind.code)) {
-      console.log(keybind.code)
       let onHold = keybind.onHold
       
       if (typeof onHold === 'undefined' === false) {
