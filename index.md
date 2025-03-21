@@ -6,6 +6,7 @@
 - [Perlin Noise Demo](05-perlin)
 - [Terrain Gen](06-terrain)
 - [Bubbles](07-bubbles)
+-[2D Array Grid](08-grid)
 
 # cs30 Projects
 - [Interactive Scene](InteractiveScene-BouncingBalls)
