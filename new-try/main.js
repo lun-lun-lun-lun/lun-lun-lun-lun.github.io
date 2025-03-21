@@ -15,8 +15,8 @@
 
 let shared;
 
-const WINDOW_WIDTH = 800
-const WINDOW_HEIGHT = 400
+const WINDOW_WIDTH = 1000
+const WINDOW_HEIGHT = 1000
 //i do not expect 456 people. its just canon to the show.
 const MAX_PLAYERS = 456;
 
@@ -24,16 +24,17 @@ const MAX_PLAYERS = 456;
 const MIN_HEALTH = 50;
 const MAX_HEALTH = 150;
 //walkspeed multiplier
-const MIN_MOVE_SPEED = 0.15;
-const MAX_MOVE_SPEED = 0.3;
-const MAX_VELOCITY = 50;
+const MIN_MOVE_SPEED = 0.25;
+const MAX_MOVE_SPEED = 0.43;
+const MAX_VELOCITY = 100;
 //pushing force multiplier, punching damage multiplier
 const MIN_STRENGTH = 0.7;
 const MAX_STRENGTH = 1.3;
 
 //your velocity is multiplied  by this each frame, if not constantly set
-const FRICTION = 0.945;
-
+const FRICTION = 0.95;
+let x_displacement = 0;
+let y_displacement = 0;
 //ctrl i for modmenu
 
 //seconds
@@ -72,19 +73,21 @@ const KEYBINDS = [
 
 //they dont move, so they dont need to be a let variable
 //could make the bodies immoveables?
-const IMMOVABLES = [
+let COLLIDERS = [
 
   //left wall |-
-  {x: 0, y: 0, width: 1, height: WINDOW_HEIGHT},
-
-  //right wall -\
-  {x: WINDOW_WIDTH, y: 0, width: 1, height: WINDOW_HEIGHT},
-
-  //bottom wall \____|
-  {x: 0, y: 0, width: WINDOW_WIDTH, height: 1},
+  {x: 0, y: 0, width: 200, height: 9999},
 
   //top wall |----\
-  {x: 0, y: WINDOW_HEIGHT, width: WINDOW_WIDTH, height: 1},
+  {x: 0, y: 0, width: 9999, height: 10},
+  //right wall -\
+  {x: WINDOW_WIDTH, y: 0, width: 10, height: WINDOW_HEIGHT},
+
+  //bottom wall \____|
+  {x: 0, y: 900, width: 99999, height: 200},
+
+  
+  // {x: 0, y: WINDOW_HEIGHT, width: WINDOW_WIDTH, height: 10},
   
 ]
 
@@ -114,6 +117,7 @@ function MakeNewPlayer() {
 
   //assign random values to most things
   myPlayer.name = Math.round(random(1,MAX_PLAYERS)).toString();
+  
   myPlayer.x_position = WINDOW_WIDTH/2;
   myPlayer.y_position = WINDOW_HEIGHT/2;
 
@@ -124,10 +128,11 @@ function MakeNewPlayer() {
 
   myPlayer.maxHealth = Math.round(random(MIN_HEALTH, MAX_HEALTH));
   myPlayer.currentHealth = myPlayer.maxHealth;
-
+  myPlayer.shoveCharge = 0
 
   myPlayer.moveSpeed = Math.round(random(MIN_MOVE_SPEED, MAX_MOVE_SPEED) * 100) /100;
   myPlayer.strength = Math.round(random(MIN_STRENGTH, MAX_STRENGTH) * 100) / 100;
+  myPlayer.size = myPlayer.strength * 80
 
   return myPlayer
 }
@@ -137,18 +142,9 @@ function MakeNewPlayer() {
 
 function PlayerMove(moving_player, x_dir, y_dir) {
   let delta = deltaTime/10
-  moving_player.x_velocity = 
-  (x_dir != 0) ? 
-  moving_player.x_velocity + moving_player.moveSpeed * x_dir * delta
-  : 
-  moving_player.x_velocity;
 
-
-  moving_player.y_velocity = 
-  (y_dir != 0) ? 
-  moving_player.y_velocity + moving_player.moveSpeed * y_dir * delta 
-  : 
-  moving_player.y_velocity;
+  moving_player.x_velocity = (x_dir != 0) ? moving_player.x_velocity + moving_player.moveSpeed * x_dir * delta : moving_player.x_velocity;
+  moving_player.y_velocity = (y_dir != 0) ? moving_player.y_velocity + moving_player.moveSpeed * y_dir * delta : moving_player.y_velocity;
 }
 
 function PlayerStop(moving_player, x_dir, y_dir) {
@@ -169,6 +165,8 @@ function PlayerUseShove(shoving_player) {
   }
 
 }
+
+
 
 function preload() {
   partyConnect("wss://demoserver.p5party.org", "hello_party");
@@ -210,7 +208,7 @@ function draw() {
   
   drawSpectators()
   drawPlayers()
-  
+  drawColliders()
   
   //ellipse(shared.x, shared.y, 100, 100);
 }
@@ -220,32 +218,66 @@ function safeMath(num){
   return Math.abs(num) < 1 ? 0 :num
 }
 
-//smoooth movement 
+//smoooth movement AND CUSTOM COLLIDERS??
+//does not include collision with players i ran out of time (while it may seem the same, the circle shape causes issues. What if I'm barely clipping the circle?
+//i'd need a function that determines how straight the angle between them is, so I could scoot one circle off to another direction, but im tired now
+
+
 function calculatePhysics(deltaTime) {
   me.x_velocity *= FRICTION
   me.y_velocity *= FRICTION
-  me.x_position += me.x_velocity
-  me.y_position += me.y_velocity
 
-  // for (let player of guests) {
-  //   //find a way to always bring a number closer to 0
-  //   player.x_velocity *= FRICTION
-  //   player.y_velocity *= FRICTION
-  //   // player.x_velocity = safeMath(player.x_velocity - Math.sign(player.x_velocity) * FRICTION)
-  //   // player.y_velocity = safeMath(player.y_velocity - Math.sign(player.y_velocity) * FRICTION)
-  //   // console.log(player.x_velocity)
-  //   // console.log(player.y_velocity)
+  let newX = me.x_velocity + me.x_position
+  let newY = me.y_velocity + me.y_position
 
-  //   player.x_position += player.x_velocity
-  //   player.y_position += player.y_velocity
 
-    
-  // }
+  //if this update will cause a collision, dont do it; reflect the velocity instead
+  //if the reflection is too small, it causes a visual jitter; dont do it
+  //a little annoying to read.
+
+  //move if this wont cause a collision
+  if (willCollide(newX, me.y_position) === false) {
+    me.x_position += me.x_velocity
+    setTimeout(delayedAction, 2000);
+
+  //so it does collide. if the force we hit the wall with is high enough, reflect
+  } else {
+    if (Math.abs(me.x_velocity*-1) > 6) {
+      me.x_velocity *= -0.7
+
+    //force is too little; make us stop.
+    } else {
+
+      
+      me.x_velocity *= 0
+    }
+  }
+
+  //move if this wont cause a collision
+  if (willCollide(me.x_position, newY) === false) {
+    me.y_position += me.y_velocity
+    setTimeout(delayedAction, 2000);
+
+  //so it does collide. 
+  } else {
+    //if the force we hit the wall with is high enough, reflect
+    if (Math.abs(me.y_velocity*-1) > 6) {
+      me.y_velocity *= -0.7
+
+    //force is too little; make us stop.
+    } else {
+      me.y_velocity *= 0
+    }
+  }
 }
 
+//originally I 
 function LimitVelocity() {
-
-  
+  let con1 = Math.abs(me.x_velocity) > 1 && Math.abs(me.y_velocity) > 1
+  if (con1) {
+    me.x_velocity *= 0.983
+    me.y_velocity *= 0.983
+  }
 }
 
 function checkKeyPresses() {
@@ -272,8 +304,28 @@ function checkKeyPresses() {
 
 }
 
-//scrapped
-function checkCollisions() {
+function drawColliders() {
+  for (let collider of COLLIDERS) {
+    fill("blue")
+    rect(collider.x, collider.y, collider.width, collider.height)
+  }
+}
+
+//this unfortunately causes weird collisions with corners
+function willCollide(newX, newY) {
+  let collisionFound = false
+  for (let collider of COLLIDERS) {
+
+    //18 instead of 20 to make colliding on corners look less bad
+    let radius = me.size/2.1
+    let above_or_below = collider.x <= newX + radius && newX - radius<= collider.x + collider.width
+    let on_right_or_left = collider.y <= newY + radius && newY - radius <= collider.y + collider.height
+
+    if (on_right_or_left && above_or_below) {
+      return true
+    }
+  }
+  return false
 
 }
 
@@ -281,9 +333,9 @@ function checkCollisions() {
 function drawPlayers() {
   for (let player of guests) {
     fill("#616975")
-    circle(player.x_position, player.y_position, player.strength * 40)
+    circle(player.x_position, player.y_position, player.size)
     fill("White")
-    textSize(15 * player.strength)
+    textSize(me.size/3)
     textAlign(CENTER, CENTER)
     let x = player.x_position
     text(player.name, x, player.y_position,)
