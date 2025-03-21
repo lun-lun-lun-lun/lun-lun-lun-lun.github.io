@@ -7,11 +7,13 @@
 // does const count? i forgot if we covered it
 // Screen scrolling
 // Multiplayer
+// sadly no docstrings because i am Lazy
 
 // To Do:
 // add onRelease, reoganize keybinds, add pushing, make the actual minigame
 // should make red pop up on the screen, but get less and less visible each time it pops up
 // short scene for players that lose
+
 
 let shared;
 
@@ -42,7 +44,6 @@ const TIME = 90;
 const START_WAIT_TIME = 30;
 
 //seconds
-let timeLeft = 60; 
 
 const KEYBINDS = [
   //W = 87, move up
@@ -80,8 +81,7 @@ let COLLIDERS = [
 
   //top wall |----\
   {x: 0, y: 0, width: 9999, height: 10},
-  //right wall -\
-  {x: WINDOW_WIDTH, y: 0, width: 10, height: WINDOW_HEIGHT},
+
 
   //bottom wall \____|
   {x: 0, y: 900, width: 99999, height: 200},
@@ -94,7 +94,9 @@ let COLLIDERS = [
 let idk = [];
 let me, guests;
 let oldGuestList = [];
-
+let currentText = "Press space to push. Game begins soon.";
+let timeLeft = 180;
+let light = "Green"
 
 //detect players leaving the game
 window.addEventListener("beforeunload", function (e) {
@@ -129,22 +131,29 @@ function MakeNewPlayer() {
   myPlayer.maxHealth = Math.round(random(MIN_HEALTH, MAX_HEALTH));
   myPlayer.currentHealth = myPlayer.maxHealth;
   myPlayer.shoveCharge = 0
-
+  myPlayer.alive = true
   myPlayer.moveSpeed = Math.round(random(MIN_MOVE_SPEED, MAX_MOVE_SPEED) * 100) /100;
   myPlayer.strength = Math.round(random(MIN_STRENGTH, MAX_STRENGTH) * 100) / 100;
   myPlayer.size = myPlayer.strength * 80
 
   return myPlayer
 }
+function betterDist(x1, y1, x2, y2) {
+  let dx = x2 - x1;
+  let dy = y2 - y1;
+  let distance = Math.sqrt(dx * dx + dy * dy)
+  return distance;
+}
 
 
 
-
-function PlayerMove(moving_player, x_dir, y_dir) {
+function PlayerMove(moving_player, x_dir, y_dir, customForce) {
   let delta = deltaTime/10
-
-  moving_player.x_velocity = (x_dir != 0) ? moving_player.x_velocity + moving_player.moveSpeed * x_dir * delta : moving_player.x_velocity;
-  moving_player.y_velocity = (y_dir != 0) ? moving_player.y_velocity + moving_player.moveSpeed * y_dir * delta : moving_player.y_velocity;
+  let force = customForce === undefined ? moving_player.moveSpeed : Math.abs(5)
+  console.log(x_dir)
+  //if 
+  moving_player.x_velocity = (x_dir != 0) ? moving_player.x_velocity + force * x_dir * delta : moving_player.x_velocity;
+  moving_player.y_velocity = (y_dir != 0) ? moving_player.y_velocity + force * y_dir * delta : moving_player.y_velocity;
 }
 
 function PlayerStop(moving_player, x_dir, y_dir) {
@@ -152,17 +161,55 @@ function PlayerStop(moving_player, x_dir, y_dir) {
   moving_player.y_velocity = moving_player.moveSpeed * y_dir
 }
 
+
+
 function PlayerChargeShove(player) {
+  
+  let delta = deltaTime/10
 
-
+  me.shoveCharge += 0.5 * delta
+  console.log("pushc")
+  
   // player.x_velocity = player.moveSpeed * x_dir
   // player.y_velocity = player.moveSpeed * y_dir
 }
 
-function PlayerUseShove(shoving_player) {
+
+let can_push = true
+function regainPush() {
+  can_push = true
+}
+function PlayerUseShove() {
+  console.log("push!")
+  can_push = false
+  setTimeout(regainPush, 8000)
   for (let player of guests) {
-    
+    if (player.name === me.name) {continue}
+    let distanceBetween = betterDist(player.x_position, player.y_position, me.x_position, me.y_position)
+    if (distanceBetween < me.size/2 + player.size/2) {
+      console.log("found!")
+      let force = me.shoveCharge
+
+      let differenceX = Math.abs(Math.abs(me.x_position) - Math.abs(player.x_position))
+      
+      let differenceY = Math.abs(Math.abs(me.y_position) - Math.abs(player.y_position))
+      differenceX = player.x_position >= me.x_position ? 1 * differenceX : -1 * differenceX
+      differenceY = player.y_position >= me.y_position ? 1 * differenceY : -1 * differenceY
+      let total = Math.abs(differenceX) + Math.abs(differenceY)
+      let dirX = differenceX / total
+      let dirY = differenceY / total
+      PlayerMove(player, dirX, dirY, me.strength)
+      // //              is pos == true                  
+      // differenceX *= player.x_position >= me.x_position ? 1 : -1
+      // differenceY *= player.y_position >= me.y_position ? 1 : -1
+      // let total = Math.abs(differenceX) + Math.abs(differenceY)
+      
+      // //couldve made it better here
+      
+      // PlayerMove(player, dirX, dirY, me.strength)
+    }
   }
+  me.shoveCharge = 0
 
 }
 
@@ -185,6 +232,7 @@ function setup() {
   noStroke();
 
   oldGuestList = JSON.parse(JSON.stringify(guests))
+  setTimeout(initiateGame(), 20)
 }
 
 
@@ -196,21 +244,28 @@ function mousePressed() {
 
 //this could leave some things undetected if players join 
 
-
-
 function draw() {
-  background("#4ceda5");
+  background(light);
 
 
   checkKeyPresses()
   LimitVelocity()
+  drawMe()
   calculatePhysics(deltaTime)
-  
-  drawSpectators()
   drawPlayers()
   drawColliders()
+  drawSpectators()
+  drawText()
+
+}
+
+
+
+//just cant fix jitter..
+function displaceCamera(x, y) {
+  x_displacement += x
+  y_displacement += y
   
-  //ellipse(shared.x, shared.y, 100, 100);
 }
 
 
@@ -224,6 +279,9 @@ function safeMath(num){
 
 
 function calculatePhysics(deltaTime) {
+  if (me.alive === false) {
+    return
+  }
   me.x_velocity *= FRICTION
   me.y_velocity *= FRICTION
 
@@ -235,14 +293,22 @@ function calculatePhysics(deltaTime) {
   //if the reflection is too small, it causes a visual jitter; dont do it
   //a little annoying to read.
 
-  //move if this wont cause a collision
+  //move if this wont cause a collisio
+  
+  let dispX = 0;
+  let dispY = 0;
+  hasMoved = false
   if (willCollide(newX, me.y_position) === false) {
-    me.x_position += me.x_velocity
-    setTimeout(delayedAction, 2000);
+    me.x_position += me.x_velocity;
+    
+    //does an action varB milliseconds later without yielding the rest of my stuff
+    dispX = -me.x_velocity
+    //setTimeout(displaceCamera, 200, -me.x_velocity, 0);
 
   //so it does collide. if the force we hit the wall with is high enough, reflect
   } else {
     if (Math.abs(me.x_velocity*-1) > 6) {
+      
       me.x_velocity *= -0.7
 
     //force is too little; make us stop.
@@ -252,11 +318,15 @@ function calculatePhysics(deltaTime) {
       me.x_velocity *= 0
     }
   }
-
+  
   //move if this wont cause a collision
   if (willCollide(me.x_position, newY) === false) {
     me.y_position += me.y_velocity
-    setTimeout(delayedAction, 2000);
+    
+    
+    //does an action varB milliseconds later without yielding the rest of my stuff
+    dispY = -me.y_velocity
+    //setTimeout(displaceCamera, 200, 0, -me.y_velocity);
 
   //so it does collide. 
   } else {
@@ -269,6 +339,24 @@ function calculatePhysics(deltaTime) {
       me.y_velocity *= 0
     }
   }
+
+  if (me.x_velocity > 3 || me.y_velocity > 3) {
+    hasMoved = true
+  }
+  if ((hasMoved && light === "Red" && me.x_position < 3000) || millis()/1000 > 90) {
+    me.alive = false
+    console.log("dead")
+    me.name = "dead :("
+  }
+  if (me.x_position > 3000) {
+
+    me.name = "winner"
+  }
+
+
+  // x_displacement = lerp(x_displacement, x_displacement-me.x_velocity, 0.1);
+  // y_displacement = lerp(y_displacement, y_displacement-me.y_velocity, 0.1);
+  setTimeout(displaceCamera, 100, dispX, dispY);
 }
 
 //originally I 
@@ -294,7 +382,7 @@ function checkKeyPresses() {
     } else if (keybind.held == true) {
 
       let onRelease = keybind.onRelease
-      if (typeof onHold === 'undefined' === false) {
+      if (typeof onRelease === 'undefined' === false) {
         onRelease.func(me, ...onRelease.args)
       }
       keybind.held = false
@@ -307,7 +395,7 @@ function checkKeyPresses() {
 function drawColliders() {
   for (let collider of COLLIDERS) {
     fill("blue")
-    rect(collider.x, collider.y, collider.width, collider.height)
+    rect(collider.x + x_displacement, collider.y + y_displacement, collider.width, collider.height)
   }
 }
 
@@ -329,17 +417,69 @@ function willCollide(newX, newY) {
 
 }
 
+function swapLight() {
+  if (light === "Green") {
+    light = "Red"
+    currentText = "Red Light!"
+  } else {
+    light = "Green"
+    currentText = "Green Light!"
+  }
+}
+
+function initiateGame() {
+  
+  let totalTime = 0
+  for (let i = 1; i<30; i++) {
+    
+    let timeBetween = random(1, 6) * 1000 + totalTime
+    setTimeout(swapLight, timeBetween)
+    setTimeout(swapLight, timeBetween + timeBetween/2)
+    totalTime += timeBetween + timeBetween/2
+  }
+}
+
+function drawText() {
+  let displaced_x = me.x_position + x_displacement
+  let displaced_y = me.y_position - 300 + y_displacement
+
+  fill("White")
+  textSize(me.size/3)
+  textAlign(CENTER, CENTER)
+  text(currentText, displaced_x, displaced_y)
+}
+
+
+
+
 
 function drawPlayers() {
   for (let player of guests) {
+    if (player.name === me.name) { continue }
+    let displaced_x = player.x_position + x_displacement
+    let displaced_y = player.y_position + y_displacement
+
     fill("#616975")
-    circle(player.x_position, player.y_position, player.size)
+    circle(displaced_x, displaced_y, player.size)
     fill("White")
-    textSize(me.size/3)
+    textSize(player.size/3)
     textAlign(CENTER, CENTER)
-    let x = player.x_position
-    text(player.name, x, player.y_position,)
+    text(player.name, displaced_x, displaced_y)
+
+    
   }
+}
+
+function drawMe() {
+  let displaced_x = me.x_position + x_displacement
+  let displaced_y = me.y_position + y_displacement
+
+  fill("#616975")
+  circle(displaced_x, displaced_y, me.size)
+  fill("White")
+  textSize(me.size/2)
+  textAlign(CENTER, CENTER)
+  text(me.name, displaced_x, displaced_y)
 }
 
 function drawSpectators() {
