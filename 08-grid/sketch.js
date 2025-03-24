@@ -14,7 +14,7 @@ function setup() {
 
   cellSize = minimum / SQUARE_DIMENSIONS;
 
-  MY_GRID = generateGrid(SQUARE_DIMENSIONS, SQUARE_DIMENSIONS);
+  MY_GRID = generateRandomGrid(SQUARE_DIMENSIONS, SQUARE_DIMENSIONS);
 }
 
 function draw() {
@@ -23,9 +23,30 @@ function draw() {
 }
 
 function keyPressed() {
+  
   if (key === "r") {
+    grid = generateRandomGrid(SQUARE_DIMENSIONS, SQUARE_DIMENSIONS);
+  }
+  if (key === "e") {
     grid = generateGrid(SQUARE_DIMENSIONS, SQUARE_DIMENSIONS);
   }
+}
+function mouseClicked() {
+  let x = Math.floor(mouseX/cellSize);
+  let y = Math.floor(mouseY/cellSize);
+  MY_GRID[y][x] = MY_GRID[y][x] === 0 ? 1 : 0;
+}
+
+function generateRandomGrid(cols, rows) {
+  let newGrid = [];
+  for (let y = 0; y<rows; y++) {
+    newGrid.push([]);
+    for (let x = 0; x<cols; x++) {
+      let rand = random(0,100) < 50 ? 1 : 0;
+      newGrid[y].push(rand);
+    }
+  }
+  return newGrid;
 }
 
 function generateGrid(cols, rows) {
@@ -33,8 +54,7 @@ function generateGrid(cols, rows) {
   for (let y = 0; y<rows; y++) {
     newGrid.push([]);
     for (let x = 0; x<cols; x++) {
-      let rand = random(0,100) < 50 ? 1 : 0;
-      newGrid[y].push(rand);
+      newGrid[y].push(0);
     }
   }
   return newGrid;
