@@ -8,6 +8,7 @@
 - [Bubbles](07-bubbles)
 - [2D Array Grid](08-grid)
 - [Grid Neighbors](09-neighbors)
+- [Rectangle Grid](10-rectangle-grid)
 
 # cs30 Projects
 - [Interactive Scene](InteractiveScene-BouncingBalls)
