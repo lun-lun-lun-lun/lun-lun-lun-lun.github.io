@@ -9,6 +9,7 @@
 - [2D Array Grid](08-grid)
 - [Grid Neighbors](09-neighbors)
 - [Rectangle Grid](10-rectangle-grid)
+- [Conway's Game of Life](11-game-of-life)
 
 # cs30 Projects
 - [Interactive Scene](InteractiveScene-BouncingBalls)
