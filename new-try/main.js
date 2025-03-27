@@ -199,14 +199,6 @@ function PlayerUseShove() {
       let dirX = differenceX / total
       let dirY = differenceY / total
       PlayerMove(player, dirX, dirY, me.strength)
-      // //              is pos == true                  
-      // differenceX *= player.x_position >= me.x_position ? 1 : -1
-      // differenceY *= player.y_position >= me.y_position ? 1 : -1
-      // let total = Math.abs(differenceX) + Math.abs(differenceY)
-      
-      // //couldve made it better here
-      
-      // PlayerMove(player, dirX, dirY, me.strength)
     }
   }
   me.shoveCharge = 0
@@ -232,7 +224,7 @@ function setup() {
   noStroke();
 
   oldGuestList = JSON.parse(JSON.stringify(guests))
-  setTimeout(initiateGame(), 20)
+  //setTimeout(initiateGame(), 20)
 }
 
 
@@ -255,7 +247,7 @@ function draw() {
   drawPlayers()
   drawColliders()
   drawSpectators()
-  drawText()
+  //drawText()
 
 }
 

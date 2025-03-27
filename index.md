@@ -10,6 +10,7 @@
 - [Grid Neighbors](09-neighbors)
 - [Rectangle Grid](10-rectangle-grid)
 - [Conway's Game of Life](11-game-of-life)
+- [Character moving in grid](12-character-grid)
 
 # cs30 Projects
 - [Interactive Scene](InteractiveScene-BouncingBalls)
