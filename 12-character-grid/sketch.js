@@ -5,6 +5,8 @@
 // Extra for Experts:
 // - describe what you did to take this project "above and beyond"
 
+
+
 let cellSize = 30;
 let grid = [];
 let MAX_WIDTH;
@@ -27,7 +29,7 @@ function preload() {
 }
 
 function setup() {
-  createCanvas(windowWidth, windowHeight);
+  createCanvas(windowWidth*0.8, windowHeight*0.8);
   MAX_WIDTH = Math.floor(windowWidth/cellSize) ;
   MAX_HEIGHT = Math.floor(windowHeight/cellSize) ;
   makeGrid(cellSize);

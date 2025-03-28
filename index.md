@@ -14,4 +14,5 @@
 
 # cs30 Projects
 - [Interactive Scene](InteractiveScene-BouncingBalls)
-- [Red Light Green Light](new-try)
+- [defunct](new-try)
+- [2D Grid Assignment](new-try)
