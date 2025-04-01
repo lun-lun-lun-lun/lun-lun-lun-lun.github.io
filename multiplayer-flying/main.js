@@ -19,10 +19,11 @@ let shared;
 
 let idk = [];
 let me, guests;
-let myCamera;
+let myCam;
 let dragX = 0;
 let dragY = 0;
-let flySpeed = 2
+let flySpeed = 2.5;
+let camSensitivity = 0.0037;
 
 //detect players leaving the game
 window.addEventListener("beforeunload", function (e) {
@@ -62,7 +63,7 @@ function setup() {
   //enable 3D rendering mode on the canvas
   createCanvas(windowWidth*0.8, windowHeight*0.8, WEBGL);
 
-  myCamera = createCamera();
+  myCam = createCamera();
 
   //camera(mouseX, mouseY, (height/2) / tan(PI/6), width/2, height/2, 0, 0, 1, 0);
 }
@@ -83,10 +84,14 @@ function draw() {
   // https://github.com/processing/p5.js/wiki/Getting-started-with-Webgl-in-p5
   // https://processing.org/tutorials/p3d
   //background(0);
+  
   mouseCaptured = false
-    myCamera.pan(-movedX * 0.005)
-    myCamera.tilt(movedY * 0.005)
-    myCamera.move(
+    let yDirection = (myCam.centerY - myCam.eyeY + movedY*camSensitivity) / 530
+    console.log( movedY)
+    let tilt = Math.abs(yDirection) <= 0.95 || Math.sign(movedY) !== Math.sign(yDirection) ? movedY : 0;
+    myCam.pan(-movedX * camSensitivity)
+    myCam.tilt(tilt * camSensitivity)
+    myCam.move(
       // D - right, A - left 
       (keyIsDown(68) ? flySpeed : 0) + (keyIsDown(65) ? -flySpeed : 0),
       // Q - down, E - up
