@@ -24,6 +24,7 @@ let dragX = 0;
 let dragY = 0;
 let flySpeed = 2.5;
 let camSensitivity = 0.0037;
+const GRAVITY = 9.8;
 
 //detect players leaving the game
 window.addEventListener("beforeunload", function (e) {
@@ -42,10 +43,23 @@ function betterDist(x1, y1, x2, y2) {
 }
 
 
-
 function createCharacter() {
-  return {}
+  return {
+    position: createVector(0,0,0),
+    velocity: createVector(0,0,0),
+    acceleration: createVector(0,GRAVITY,0),
+    model: undefined, //set to a newly loaded model later? or a string that defines what model to show for other's screens
+  }
 }
+
+let keyBinds = {
+  87: {pressed: placeholder, args: []}, //W
+  65: {pressed: placeholder, args: []}, //A
+  83: {pressed: placeholder, args: []}, //S
+  68: {pressed: placeholder, args: []}, //D
+}
+
+function fly() {}
 
 function preload() {
   partyConnect("wss://demoserver.p5party.org", "hello_party");
@@ -70,6 +84,8 @@ function setup() {
 
 
 
+
+
 function mousePressed() {
   console.log(me)
   console.log(partyLoadGuestShareds())
@@ -87,8 +103,9 @@ function draw() {
   
   mouseCaptured = false
     let yDirection = (myCam.centerY - myCam.eyeY + movedY*camSensitivity) / 530
-    console.log( movedY)
-    let tilt = Math.abs(yDirection) <= 0.95 || Math.sign(movedY) !== Math.sign(yDirection) ? movedY : 0;
+    //console.log( yDirection)
+    let tilt = Math.abs(yDirection) <= 0.99 || Math.sign(movedY) !== Math.sign(yDirection) ? movedY : 0;
+    //console.log(-movedX * camSensitivity)
     myCam.pan(-movedX * camSensitivity)
     myCam.tilt(tilt * camSensitivity)
     myCam.move(
@@ -100,7 +117,7 @@ function draw() {
       (keyIsDown(83) ? flySpeed : 0) + (keyIsDown(87) ? -flySpeed : 0)
     );
     box(200);
-  
+    box(200);
   // camera(mouseX, height/2, (height/2) / tan(PI/6), mouseX, height/2, 0, 0, 1, 0);
   // translate(width/2, height/2, -100);
   // stroke(255);
