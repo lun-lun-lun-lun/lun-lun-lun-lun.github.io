@@ -32,6 +32,8 @@ const EMPTY_VECTOR3 = {
   z: 0,
 }
 
+let MODELS;
+
 //detect players leaving the game
 window.addEventListener("beforeunload", function (e) {
   //cleanup
@@ -45,6 +47,7 @@ function betterDist(x1, y1, x2, y2) {
   let dx = x2 - x1;
   let dy = y2 - y1;
   let distance = Math.sqrt(dx * dx + dy * dy)
+  
   return distance;
 }
 
@@ -58,6 +61,7 @@ function newVector3(x,y,z) {
   return v3
 }
 
+
 function createCharacter() {
   return {
     flySpeed: DEFAULT_SPEED,
@@ -69,7 +73,7 @@ function createCharacter() {
     relativeAccel:  newVector3(),
     position:       newVector3(),
     rotation:       newVector3(),
-    model:          undefined, //set to a newly loaded model later? or a string that defines what model to show for other's screens
+    model:          "box", //set to a newly loaded model later? or a string that defines what model to show for other's screens
   }
 }
 
@@ -138,7 +142,11 @@ function setup() {
   createCanvas(windowWidth*0.8, windowHeight*0.8, WEBGL);
 
   myCam = createCamera();
-  print(myCam)
+
+  MODELS = {
+    "box": box,
+    "sphere": sphere,
+  }
   //camera(mouseX, mouseY, (height/2) / tan(PI/6), width/2, height/2, 0, 0, 1, 0);
 }
 
@@ -156,7 +164,6 @@ function mousePressed() {
 }
 
 //this could leave some things undetected if players join 
-
 function draw() {
   background(40);
   
@@ -165,22 +172,67 @@ function draw() {
   //background(0);
  
   mouseCaptured = false
-    let yDirection = (myCam.centerY - myCam.eyeY + movedY*camSensitivity) / 530
-    //console.log( yDirection)
-    let tilt = Math.abs(yDirection) <= 0.97 || Math.sign(movedY) !== Math.sign(yDirection) ? movedY : 0;
+    
+    //console.log( directionY)
+    //let tilt = Math.abs(directionY) <= 0.97 || Math.sign(movedY) !== Math.sign(directionY) ? movedY : 0;
     //console.log(-movedX * camSensitivity)
-    myCam.pan(-movedX * camSensitivity)
-    myCam.tilt(tilt * camSensitivity)
-    myCam.move(
-      // D - right, A - left 
-      (keyIsDown(68) ? flySpeed : 0) + (keyIsDown(65) ? -flySpeed : 0),
-      // Q - down, E - up
-      (keyIsDown(81) ? flySpeed : 0) + (keyIsDown(69) ? -flySpeed : 0),
-      // S - backward, W - forward
-      (keyIsDown(83) ? flySpeed : 0) + (keyIsDown(87) ? -flySpeed : 0)
-    );
+
+    let directionY = (myCam.centerY - myCam.eyeY + movedY*camSensitivity) / 530
+
+    
+    let rotationX = -movedX * camSensitivity
+    let rotationY = Math.abs(directionY) <= 0.97 || Math.sign(movedY) !== Math.sign(directionY) ? movedY * camSensitivity : 0;
+
+    me.rotation.x += rotationX
+    me.rotation.y += rotationY
+
+    //the camera pan and tilt is innacturately described and pans the more its been tilted WHO WROTE THIS
+    //
+    let pos = me.position
+    myCam.camera(pos.x,pos.y-300,pos.z+200, -90, me.rotation.y, 50, 0, 1 ,0)
+    // myCam.pan(rotationX)
+    // myCam.tilt(rotationY)
+    if (keyIsDown(68)) {
+      me.position.x += flySpeed
+    }
+    if (keyIsDown(65)) {
+      me.position.x -= flySpeed
+    }
+    if (keyIsDown(83)) {
+      me.position.z += flySpeed
+    }
+    if (keyIsDown(87)) {
+      me.position.z -= flySpeed
+    }
+    // myCam.move(
+    //   // D - right, A - left 
+    //   (keyIsDown(68) ? flySpeed : 0) + (keyIsDown(65) ? -flySpeed : 0),
+    //   // Q - down, E - up
+    //   (keyIsDown(81) ? flySpeed : 0) + (keyIsDown(69) ? -flySpeed : 0),
+    //   // S - backward, W - forward
+    //   (keyIsDown(83) ? flySpeed : 0) + (keyIsDown(87) ? -flySpeed : 0)
+    // );
+    push();
+    //WHENERVJHE I TRY TO TYPE OUT "TRANSLATE)+()" IT AUTOCORRECTS TO A DIFFERENT THING BUT DOESNT AUTOFILL
+    //WHO WROTE THIS
+    translate (0,0, -200, )
     box(200);
+    pop();
     box(200);
+    for (let player of partyLoadGuestShareds()) {
+      let pos = player.position
+      push();
+      translate (pos.x,pos.y, pos.z)
+      rotateY(player.rotation.x)
+      //someone at the team decided that rotateY (Y btw) should rotate blocks on right and left
+      //i will hate that person forever
+      //rotateX(player.rotation.y)
+      fill("red")
+      console.log(player.model)
+      MODELS[player.model](200)
+      pop();
+      
+    }
   // camera(mouseX, height/2, (height/2) / tan(PI/6), mouseX, height/2, 0, 0, 1, 0);
   // translate(width/2, height/2, -100);
   // stroke(255);
