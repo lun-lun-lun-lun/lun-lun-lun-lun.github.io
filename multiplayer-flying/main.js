@@ -142,7 +142,11 @@ function setup() {
   createCanvas(windowWidth*0.8, windowHeight*0.8, WEBGL);
 
   myCam = createCamera();
+  
+  //myCam.setPosition(0, -400, 800);
 
+  // Point the camera at the origin.
+ 
   MODELS = {
     "box": box,
     "sphere": sphere,
@@ -162,7 +166,7 @@ function mousePressed() {
 
   
 }
-
+let camAngle = 0;
 //this could leave some things undetected if players join 
 function draw() {
   background(40);
@@ -178,20 +182,29 @@ function draw() {
     //console.log(-movedX * camSensitivity)
 
     let directionY = (myCam.centerY - myCam.eyeY + movedY*camSensitivity) / 530
-
+    
     
     let rotationX = -movedX * camSensitivity
     let rotationY = Math.abs(directionY) <= 0.97 || Math.sign(movedY) !== Math.sign(directionY) ? movedY * camSensitivity : 0;
 
+
+    let deltaX = movedX;
+    camAngle += deltaX * 0.01;
     me.rotation.x += rotationX
     me.rotation.y += rotationY
-
+    console.log(camAngle, me.rotation.x)
+    myCam.setPosition(
+      me.position.x + Math.cos(me.rotation.x) * 90, 
+      me.position.y - 200, 
+      me.position.z + 300 + Math.sin(me.rotation.x) * 90,
+    )
+    
     //the camera pan and tilt is innacturately described and pans the more its been tilted WHO WROTE THIS
     //
     let pos = me.position
-    myCam.camera(pos.x,pos.y-300,pos.z+200, -90, me.rotation.y, 50, 0, 1 ,0)
-    // myCam.pan(rotationX)
-    // myCam.tilt(rotationY)
+    //myCam.camera(pos.x,pos.y-300,pos.z+400, -me.rotation.x, me.rotation.y, me.rotation.z, 0, 1 ,0)
+    //myCam.pan(rotationX)
+    //myCam.tilt(rotationY)
     if (keyIsDown(68)) {
       me.position.x += flySpeed
     }
@@ -213,7 +226,7 @@ function draw() {
     //   (keyIsDown(83) ? flySpeed : 0) + (keyIsDown(87) ? -flySpeed : 0)
     // );
     push();
-    //WHENERVJHE I TRY TO TYPE OUT "TRANSLATE)+()" IT AUTOCORRECTS TO A DIFFERENT THING BUT DOESNT AUTOFILL
+    //WHENERVJHE I TRY TO TYPE OUT "TRANSLATE()" IT AUTOCORRECTS TO A DIFFERENT THING BUT DOESNT AUTOFILL
     //WHO WROTE THIS
     translate (0,0, -200, )
     box(200);
@@ -226,7 +239,7 @@ function draw() {
       rotateY(player.rotation.x)
       //someone at the team decided that rotateY (Y btw) should rotate blocks on right and left
       //i will hate that person forever
-      //rotateX(player.rotation.y)
+      rotateX(player.rotation.y)
       fill("red")
       console.log(player.model)
       MODELS[player.model](200)
