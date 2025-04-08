@@ -185,26 +185,36 @@ function draw() {
     
     
     let rotationX = -movedX * camSensitivity
-    let rotationY = Math.abs(directionY) <= 0.97 || Math.sign(movedY) !== Math.sign(directionY) ? movedY * camSensitivity : 0;
-
+    // let rotationY = Math.abs(directionY) <= 0.97 || Math.sign(movedY) !== Math.sign(directionY) ? movedY * camSensitivity : 0;
+    let rotationYAlt = -movedY * camSensitivity
 
     let deltaX = movedX;
     camAngle += deltaX * 0.01;
     me.rotation.x += rotationX
-    me.rotation.y += rotationY
-    console.log(camAngle, me.rotation.x)
+    //me.rotation.y += rotationY
+    me.rotation.y -= rotationYAlt
+    //console.log(camAngle, me.rotation.x)
+
+    console.log(Math.cos(me.rotation.y) * 720)
     myCam.setPosition(
-      me.position.x + Math.cos(me.rotation.x) * 90, 
-      me.position.y - 200, 
-      me.position.z + 300 + Math.sin(me.rotation.x) * 90,
+      me.position.x + Math.cos(me.rotation.x) * -400 * Math.cos(me.rotation.y), 
+      me.position.y - 100 + Math.sin(me.rotation.y) * -400, 
+      me.position.z + Math.sin(me.rotation.x) * 400 * Math.cos(me.rotation.y),
+    )
+    //myCam.tilt(rotationY)
+    //https://diwi.github.io/p5.EasyCam/
+    myCam.lookAt(
+      me.position.x, 
+      me.position.y - 100, 
+      me.position.z
     )
     
     //the camera pan and tilt is innacturately described and pans the more its been tilted WHO WROTE THIS
-    //
+    //s
     let pos = me.position
     //myCam.camera(pos.x,pos.y-300,pos.z+400, -me.rotation.x, me.rotation.y, me.rotation.z, 0, 1 ,0)
     //myCam.pan(rotationX)
-    //myCam.tilt(rotationY)
+    
     if (keyIsDown(68)) {
       me.position.x += flySpeed
     }
@@ -239,7 +249,7 @@ function draw() {
       rotateY(player.rotation.x)
       //someone at the team decided that rotateY (Y btw) should rotate blocks on right and left
       //i will hate that person forever
-      rotateX(player.rotation.y)
+      rotateZ(player.rotation.y)
       fill("red")
       console.log(player.model)
       MODELS[player.model](200)
