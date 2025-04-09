@@ -212,7 +212,7 @@ function draw() {
 
 
     console.log(
-      me.rotation.x % 3.60, 
+      me.rotation.x % 4, 
       Math.PI/2,
       me.rotation.y, 
       me.rotation.z)
