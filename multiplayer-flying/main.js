@@ -73,6 +73,7 @@ function createCharacter() {
     relativeAccel:  newVector3(),
     position:       newVector3(),
     rotation:       newVector3(),
+    facing:         newVector3(),
     model:          "box", //set to a newly loaded model later? or a string that defines what model to show for other's screens
   }
 }
@@ -185,8 +186,8 @@ function draw() {
     
     
     let rotationX = -movedX * camSensitivity
-    // let rotationY = Math.abs(directionY) <= 0.97 || Math.sign(movedY) !== Math.sign(directionY) ? movedY * camSensitivity : 0;
-    let rotationYAlt = -movedY * camSensitivity
+    let rotationYAlt = Math.abs(directionY) <= 0.7 || Math.sign(movedY) !== Math.sign(directionY) ? movedY * camSensitivity : 0;
+    let rotationY = -movedY * camSensitivity
 
     let deltaX = movedX;
     camAngle += deltaX * 0.01;
@@ -197,17 +198,24 @@ function draw() {
 
     console.log(Math.cos(me.rotation.y) * 720)
     myCam.setPosition(
-      me.position.x + Math.cos(me.rotation.x) * -400 * Math.cos(me.rotation.y), 
-      me.position.y - 100 + Math.sin(me.rotation.y) * -400, 
+      me.position.x  + Math.cos(me.rotation.x) * -400 * Math.cos(me.rotation.y), 
+      me.position.y - 200 + Math.sin(me.rotation.y) * -400, 
       me.position.z + Math.sin(me.rotation.x) * 400 * Math.cos(me.rotation.y),
     )
     //myCam.tilt(rotationY)
     //https://diwi.github.io/p5.EasyCam/
     myCam.lookAt(
       me.position.x, 
-      me.position.y - 100, 
+      me.position.y - 200, 
       me.position.z
     )
+
+
+    console.log(
+      me.rotation.x % 3.60, 
+      Math.PI/2,
+      me.rotation.y, 
+      me.rotation.z)
     
     //the camera pan and tilt is innacturately described and pans the more its been tilted WHO WROTE THIS
     //s
