@@ -102,7 +102,7 @@ function setup() {
   }
 
   //make a 2d flat height grid
-  environment = buildEnvironment(30, 30, 15)
+  environment = buildEnvironment(15, 15, 15)
   console.log(environment)
 }
 
