@@ -1,30 +1,48 @@
-// Flying
+// Multiplayer Flying - 2D Arrays
 // Laeron Lewis
-// March 31st, 2025
+// April 10th, 2025
 
 // Extra For Experts:
 // 3D
 // Multiplayer
 // push(), pop()
-// vector math :(
+// vector math for movement
 
-const flySpeed = 8.5;
+const BACKGROUND_COLOUR = "blue"
+const MAP_WIDTH = 10;
+const MAP_LENGTH = 12;
+const MAX_BLOCK_HEIGHT = 5;
+const BLOCK_SIZE = 300;
+const PLAYER_SIZE = 55
+const PLAYER_COLOUR = "red"
+const CAM_DIST_Z = 800;
+const CAM_DIST_Y = PLAYER_SIZE;
+const FLY_SPEED = 15;
+const CAM_SENSITIVITY = 0.0037;
+const KEY_CODES = {
+  87: {activate: fly, args: [1,1,-1,  "forward"]},  //W
+  65: {activate: fly, args: [1,0,-1,  "right"]},    //A
+  83: {activate: fly, args: [-1,-1,1, "forward"]},  //S
+  68: {activate: fly, args: [-1,0,1,  "right"]},    //D
+  32: {activate: fly, args: [0,-1,0,  "up"]},       //Spacebar
+  17: {activate: fly, args: [0,1,0,   "up"]},       //Ctrl
+}
 const EMPTY_VECTOR3 = {
   x: 0,
   y: 0,
   z: 0,
 }
 
-//directional vector3s
+let blockColours = []
 let forwardVec3 = newVector3(0,0,-1);
 let rightVec3 =   newVector3(1,0,0);
 let upVec3 =      newVector3(0,1,0);
 let shared;
 let me, guests;
-let camSensitivity = 0.0037;
 let environment;
 let myCam;
 let MODELS;
+
 
 
 //detect players leaving the game
@@ -47,36 +65,28 @@ function newVector3(x,y,z) {
   return vec3
 }
 
+//make a 2d grid filled with random uints 0 to maxHeight
 function buildEnvironment(length, width, maxHeight) {
   let map = []
-  for (let y = 0; y<length; y++) {
+  for (let y = 0; y<=length; y++) {
     map.push([])
-    for (let x = 0; x<width; x++) {
+    for (let x = 0; x<=width; x++) {
       map[y].push(Math.floor(random() * maxHeight))
     }
   }
   return map
 }
 
+//make a new character with position and rotation data
 function createCharacter() {
   return {
-    flySpeed: flySpeed,
-
-    //for vectors, im probably gonna have to use the placeholders then make a p5.Vector out of them when I want to use prebuilt funcs
-    //I ENDED UP NOT USING THESE IM SO TIRED
     position:       newVector3(),
     rotation:       newVector3(),
-    model:          "sphere", //set to a newly loaded model later? or a string that defines what model to show for other's screens
+    model:          "sphere",
   }
 }
 
-//keybinds was scrapped, i got lazy
-
-function fly(axis, power) {
-  //finish later
-  
-}
-
+//init multiplayer stuff
 function preload() {
   partyConnect("wss://demoserver.p5party.org", "hello_party");
   if (partyIsHost()) {
@@ -89,12 +99,11 @@ function preload() {
 }
 
 function setup() {
-  //enable 3D rendering mode on the canvas
   noStroke()
-  createCanvas(windowWidth*0.8, windowHeight*0.8, WEBGL);
 
+  //enable 3D rendering mode on the canvas
+  createCanvas(windowWidth*0.8, windowHeight*0.8, WEBGL);
   myCam = createCamera();
-  
   
   MODELS = {
     "box": box,
@@ -102,12 +111,13 @@ function setup() {
   }
 
   //make a 2d flat height grid
-  environment = buildEnvironment(15, 15, 15)
-  console.log(environment)
+  environment = buildEnvironment(MAP_WIDTH, MAP_LENGTH, MAX_BLOCK_HEIGHT)
 }
 
 
-// helper function to normalize a vector
+
+
+// helper function to normalize a vector (make all values 1)
 // thank you stack overflow :)
 function normalizeVector3(vec3) {
 
@@ -121,9 +131,6 @@ function normalizeVector3(vec3) {
     vec3.z /= length;
   }
 }
-
-
-
 
 // update AFTER camera rotation
 //lets you move in respect to your camera rotation
@@ -150,114 +157,142 @@ function updateRotationVector3s() {
   normalizeVector3(upVec3);
 }
 
-
-
-
+//click to hide mouse and prevent it going offscreen
 function mousePressed() {
   requestPointerLock()
 }
 
+
+//move in the direction you press based on your forward, right, or up vectors
+function fly(xDir, yDir, zDir, direction) {
+  let vec3 = forwardVec3;
+  //originally i used actual deltatime, but it looked choppy
+  let delta = 1//deltaTime/100
+  if (direction === "right") {
+    vec3 = rightVec3;
+  } else if (direction === "up") {
+    vec3 = upVec3;
+  }
+  me.position.x += (vec3.x * FLY_SPEED) * xDir * delta;
+  me.position.y += (vec3.y * FLY_SPEED) * yDir * delta;
+  me.position.z += (vec3.z * FLY_SPEED) * zDir * delta;
+  
+}
+
+
+//use inputs and draw the scene
 function draw() {
-  background(40);
- 
-  mouseCaptured = false
-    
-    
-    let rotationX = -movedX * camSensitivity
-    let directionY = (myCam.centerY - myCam.eyeY + movedY*camSensitivity) / 530
-    let rotationY = Math.abs(directionY) <= 1.3 || Math.sign(movedY) !== Math.sign(directionY) ? -movedY * camSensitivity : 0;
+  background(BACKGROUND_COLOUR);
 
-    me.rotation.x += rotationX
-    me.rotation.y -= rotationY
+  updateRotations()
+  updateCamera()
+  updateRotationVector3s()
 
-    //decide how far forward, left, and up the cam should be based on rotation
-    //'turning around a point'
-    myCam.setPosition(
-      me.position.x  + Math.cos(me.rotation.x) * -800 * Math.cos(me.rotation.y), 
-      me.position.y - 50 + Math.sin(me.rotation.y) * -800, 
-      me.position.z + Math.sin(me.rotation.x) * 800 * Math.cos(me.rotation.y),
-    )
-    
-    //point at the players model
-    myCam.lookAt(
-      me.position.x, 
-      me.position.y - 50, 
-      me.position.z
-    )
-    updateRotationVector3s()
-    
-   
-    
-    // W
-    if (keyIsDown(87)) { 
-      me.position.x += forwardVec3.x * flySpeed;
-      me.position.y += forwardVec3.y * flySpeed;
-      me.position.z -= forwardVec3.z * flySpeed;
-    }
-    // S
-    if (keyIsDown(83)) { 
-      me.position.x -= forwardVec3.x * flySpeed;
-      me.position.y -= forwardVec3.y * flySpeed;
-      me.position.z += forwardVec3.z * flySpeed;
-    }
-    // D
-    if (keyIsDown(68)) { 
-      me.position.x -= rightVec3.x * flySpeed;
-      me.position.z += rightVec3.z * flySpeed;
-    }
-    // A
-    if (keyIsDown(65)) {
-      me.position.x += rightVec3.x * flySpeed;
-      me.position.z -= rightVec3.z * flySpeed;
-    }
-    // Space
-    if (keyIsDown(32)) {
-      me.position.y -= upVec3.y * flySpeed;
-    }
-    //Ctrl
-    if (keyIsDown(17)) {
-      me.position.y += upVec3.y * flySpeed;
-    }
+  //move
+  getKeyPresses()
+
+  drawPlayers()
+  drawMap()
+}
 
 
-    for (let player of partyLoadGuestShareds()) {
-      let pos = player.position
-
-      push();
-        translate (pos.x,pos.y, pos.z)
-
-        //someone at the team decided that rotateY (Y btw) should rotate models on right and left
-        //i will hate that person forever
-        rotateY(player.rotation.x)
-        rotateZ(player.rotation.y)
-        fill("red")
-        MODELS[player.model](50)
-      pop();
-    }
-
+//show all players
+function drawPlayers() {
+  for (let player of partyLoadGuestShareds()) {
+    let pos = player.position
+    let rot = player.rotation
 
     push();
-    //(environment.length/2)*200
-    translate ((environment.length/2)*200, 3000, -(environment[1].length/2)*200)
+      translate (pos.x,pos.y, pos.z)
 
-
-    for (let x = 0; x<environment.length; x++) {
-      translate (-200,0, 0)
-      let height = 0;
-      for (let z = 0; z<environment[x].length; z++) {
-        translate (0, 0, 200)
-        height = environment[x][z]
-
-        //build up higher
-        for (let y = 0; y<height; y++) {
-          translate (0, -200, 0)
-          box(200)
-        }
-        //reset some translations
-        translate (0,200*height, 0)
-      }
-      translate (0, 0, -200*environment[x].length)
-    }
+      //someone at the team decided that rotateY (Y btw) should rotate models on right and left
+      //i will hate that person forever
+      rotateY(rot.x)
+      rotateZ(rot.y)
+      fill(PLAYER_COLOUR)
+      MODELS[player.model](PLAYER_SIZE)
     pop();
+  }
+}
 
+//show the map
+function drawMap() {
+  push();
+  //put the environment directly under you
+  translate (MAP_WIDTH*BLOCK_SIZE/2, MAX_BLOCK_HEIGHT * BLOCK_SIZE, -MAP_LENGTH*BLOCK_SIZE/2)
+
+  let totalBlocks = 0;
+  for (let x = 0; x<environment.length; x++) {
+    translate (-BLOCK_SIZE,0, 0)
+    let height = 0;
+    for (let z = 0; z<environment[x].length; z++) {
+      translate (0, 0, BLOCK_SIZE)
+      height = environment[x][z]
+
+      //build up higher
+      for (let y = 0; y<height; y++) {
+        translate (0, -BLOCK_SIZE, 0)
+
+        //use the assign colour, or make one if it doesnt yet exist
+        let colour = blockColours[totalBlocks] || blockColours[blockColours.push([random()*255,random()*255,random()*255]) - 1]
+        totalBlocks += 1
+        fill(...colour)
+
+
+        box(BLOCK_SIZE)
+      }
+      //reset translations for y
+      translate (0,BLOCK_SIZE*height, 0)
+    }
+    //reset translations for z
+    translate (0, 0, -BLOCK_SIZE*environment[x].length)
+  }
+  totalBlocks = 0
+  pop();
+}
+
+
+
+
+//actiavate keys based on defined 'activate' function
+function getKeyPresses() {
+  //for some reason you have to do Object.keys before iterating through an object in js.
+  for (let code of Object.keys(KEY_CODES)) {
+    if (keyIsDown(code)) {
+      let keybindData = KEY_CODES[code]
+
+      //use func with set args
+      keybindData.activate(...keybindData.args)
+    }
+  }
+}
+
+//update the camera as you rotate the mouse
+function updateCamera() {
+  //decide how far forward, left, and up the cam should be based on rotation
+  //'turning around a point'
+  myCam.setPosition(
+    me.position.x + Math.cos(me.rotation.x) * -CAM_DIST_Z * Math.cos(me.rotation.y), 
+    me.position.y + (Math.sin(me.rotation.y) * -CAM_DIST_Z) - CAM_DIST_Y, 
+    me.position.z + Math.sin(me.rotation.x) * CAM_DIST_Z * Math.cos(me.rotation.y),
+  )
+  
+  //point at the players model
+  myCam.lookAt(
+    me.position.x, 
+    me.position.y - CAM_DIST_Y, 
+    me.position.z
+  )
+}
+
+//update self rotation before updating camera itself (camera is based on this anyways)
+function updateRotations() {
+  let rotationX = -movedX * CAM_SENSITIVITY
+  let directionY = (myCam.centerY - myCam.eyeY + movedY*CAM_SENSITIVITY) / 530
+
+  //prevent you from rotating infinitly in the y and inverting your stuff (hopefully...)
+  let rotationY = Math.abs(directionY) <= 1.3 || Math.sign(movedY) !== Math.sign(directionY) ? -movedY * CAM_SENSITIVITY : 0;
+
+  me.rotation.x += rotationX
+  me.rotation.y -= rotationY
 }
