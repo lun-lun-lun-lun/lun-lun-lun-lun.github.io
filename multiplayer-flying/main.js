@@ -109,6 +109,7 @@ function setup() {
     "box": box,
     "sphere": sphere,
   }
+  //see more
   perspective(1.3)
   //make a 2d flat height grid
   environment = buildEnvironment(MAP_WIDTH, MAP_LENGTH, MAX_BLOCK_HEIGHT)
