@@ -12,7 +12,7 @@ const BACKGROUND_COLOUR = "blue"
 const MAP_WIDTH = 10;
 const MAP_LENGTH = 12;
 const MAX_BLOCK_HEIGHT = 5;
-const BLOCK_SIZE = 300;
+const BLOCK_SIZE = 500;
 const PLAYER_SIZE = 55
 const PLAYER_COLOUR = "red"
 const CAM_DIST_Z = 800;
@@ -109,7 +109,7 @@ function setup() {
     "box": box,
     "sphere": sphere,
   }
-
+  perspective(1.3)
   //make a 2d flat height grid
   environment = buildEnvironment(MAP_WIDTH, MAP_LENGTH, MAX_BLOCK_HEIGHT)
 }
