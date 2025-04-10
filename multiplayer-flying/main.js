@@ -156,13 +156,9 @@ function updateRotationVector3s() {
 function mousePressed() {
   requestPointerLock()
 }
-//this could leave some things undetected if players join 
+
 function draw() {
   background(40);
-  
-  // https://github.com/processing/p5.js/wiki/Getting-started-with-Webgl-in-p5
-  // https://processing.org/tutorials/p3d
-  //background(0);
  
   mouseCaptured = false
     
