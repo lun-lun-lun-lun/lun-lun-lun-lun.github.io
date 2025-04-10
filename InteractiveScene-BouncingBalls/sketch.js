@@ -89,7 +89,6 @@ function MakeNewBall() {
     balls.push( new Ball( position, velocity, mouse_ball_radius, name ) );
     console.log("made")
   }
- 
 }
 
 

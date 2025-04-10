@@ -1,38 +1,49 @@
-// Flying
+// Multiplayer Flying - 2D Arrays
 // Laeron Lewis
-// March 31st, 2025
+// April 10th, 2025
 
 // Extra For Experts:
 // 3D
 // Multiplayer
+// push(), pop()
+// vector math for movement
 
-// To Do:
-// Add input system (simply it - didn't need allat from before)
-// Characters, moving a model
-// Towers, Walls
-// Smooth movement & physics (try to port from before)
-// Human-Object Collisions
-// Object-Object physics and collisions?? (try to port from DeltaPhysics)
-
-
-let shared;
-
-let idk = [];
-let me, guests;
-let myCam;
-let dragX = 0;
-let dragY = 0;
-let flySpeed = 2.5;
-let camSensitivity = 0.0037;
-const GRAVITY = 9.8;
-const DEFAULT_SPEED = 9.8;
+const BACKGROUND_COLOUR = "blue"
+const MAP_WIDTH = 10;
+const MAP_LENGTH = 12;
+const MAX_BLOCK_HEIGHT = 5;
+const BLOCK_SIZE = 500;
+const PLAYER_SIZE = 55
+const PLAYER_COLOUR = "red"
+const CAM_DIST_Z = 800;
+const CAM_DIST_Y = PLAYER_SIZE;
+const FLY_SPEED = 15;
+const CAM_SENSITIVITY = 0.0037;
+const KEY_CODES = {
+  87: {activate: fly, args: [1,1,-1,  "forward"]},  //W
+  65: {activate: fly, args: [1,0,-1,  "right"]},    //A
+  83: {activate: fly, args: [-1,-1,1, "forward"]},  //S
+  68: {activate: fly, args: [-1,0,1,  "right"]},    //D
+  32: {activate: fly, args: [0,-1,0,  "up"]},       //Spacebar
+  17: {activate: fly, args: [0,1,0,   "up"]},       //Ctrl
+}
 const EMPTY_VECTOR3 = {
   x: 0,
   y: 0,
   z: 0,
 }
 
+let blockColours = []
+let forwardVec3 = newVector3(0,0,-1);
+let rightVec3 =   newVector3(1,0,0);
+let upVec3 =      newVector3(0,1,0);
+let shared;
+let me, guests;
+let environment;
+let myCam;
 let MODELS;
+
+
 
 //detect players leaving the game
 window.addEventListener("beforeunload", function (e) {
@@ -43,88 +54,39 @@ window.addEventListener("beforeunload", function (e) {
   // return confirmationMessage;                            //Webkit, Safari, Chrome
 });
 
-function betterDist(x1, y1, x2, y2) {
-  let dx = x2 - x1;
-  let dy = y2 - y1;
-  let distance = Math.sqrt(dx * dx + dy * dy)
-  
-  return distance;
-}
 
 //copy the empty vector, return with desired values.
 //able to pass to other clients since its not a class object like p5.Vector
 function newVector3(x,y,z) {
-  let v3 = structuredClone(EMPTY_VECTOR3)
-  v3.x = x || 0;
-  v3.y = y || 0;
-  v3.z = z || 0;
-  return v3
+  let vec3 = structuredClone(EMPTY_VECTOR3)
+  vec3.x = x || 0;
+  vec3.y = y || 0;
+  vec3.z = z || 0;
+  return vec3
 }
 
+//make a 2d grid filled with random uints 0 to maxHeight
+function buildEnvironment(length, width, maxHeight) {
+  let map = []
+  for (let y = 0; y<=length; y++) {
+    map.push([])
+    for (let x = 0; x<=width; x++) {
+      map[y].push(Math.floor(random() * maxHeight))
+    }
+  }
+  return map
+}
 
+//make a new character with position and rotation data
 function createCharacter() {
   return {
-    flySpeed: DEFAULT_SPEED,
-
-    //for vectors, im probably gonna have to use the placeholders then make a p5.Vector out of them when I want to use prebuilt funcs
-    trueAccel:      newVector3(),
-    trueVelo:       newVector3(),
-    relativeVelo:   newVector3(),
-    relativeAccel:  newVector3(),
     position:       newVector3(),
     rotation:       newVector3(),
-    facing:         newVector3(),
-    model:          "box", //set to a newly loaded model later? or a string that defines what model to show for other's screens
+    model:          "sphere",
   }
 }
 
-
-function placeholder() {}
-
-let keyBinds = {
-  87: { //W
-    held: false,
-    pressed: {func: fly, args: ["z", -1]},
-    released: {func: placeholder, args: []},
-  },
-  65: { //A
-    held: false,
-    pressed: {func: fly, args: ["x", -1]},
-    released: {func: placeholder, args: []},
-  },
-  83: { //S
-    held: false,
-    pressed: {func: fly, args: ["z", 1]},
-    released: {func: placeholder, args: []},
-  },
-  68: { //D
-    held: false,
-    pressed: {func: fly, args: ["x", 1]},
-    released: {func: placeholder, args: []},
-  },
-  32: { //Spacebar
-    held: false,
-    pressed: {func: fly, args: ["y", -1]},
-    released: {func: placeholder, args: []},
-  },
-  17: { //Ctrl
-    held: false,
-    pressed: {func: fly, args: ["y", 1]},
-    released: {func: placeholder, args: []},
-  },  
-}
-
-function fly(axis, power) {
-  //if i cant figure out relative stuff, tween the model to in front of the camera when they move
-  if (relativeAccel[axis] === undefined) {return}
-  if (relativeAccel[power] === undefined) {return}
-  me.relativeAccel[axis] = 1*power
-}
-
-function boost() {
-
-}
-
+//init multiplayer stuff
 function preload() {
   partyConnect("wss://demoserver.p5party.org", "hello_party");
   if (partyIsHost()) {
@@ -132,159 +94,206 @@ function preload() {
         new_join: [],
     });
   }
-  guests = partyLoadGuestShareds();
-  
+  guests = partyLoadGuestShareds(); 
   me = partyLoadMyShared(createCharacter());
 }
 
 function setup() {
-  //enable 3D rendering mode on the canvas
   noStroke()
-  createCanvas(windowWidth*0.8, windowHeight*0.8, WEBGL);
 
+  //enable 3D rendering mode on the canvas
+  createCanvas(windowWidth*0.8, windowHeight*0.8, WEBGL);
   myCam = createCamera();
   
-  //myCam.setPosition(0, -400, 800);
-
-  // Point the camera at the origin.
- 
   MODELS = {
     "box": box,
     "sphere": sphere,
   }
-  //camera(mouseX, mouseY, (height/2) / tan(PI/6), width/2, height/2, 0, 0, 1, 0);
+  //see more of the world
+  perspective(1.3)
+  //make a 2d flat height grid
+  environment = buildEnvironment(MAP_WIDTH, MAP_LENGTH, MAX_BLOCK_HEIGHT)
 }
 
 
 
 
+// helper function to normalize a vector (make all values 1)
+// thank you stack overflow :)
+function normalizeVector3(vec3) {
 
+  //use euclidean distance formula to get the length of vec3
+  let length = Math.sqrt(vec3.x * vec3.x + vec3.y * vec3.y + vec3.z * vec3.z);
+
+  //dont div by 0, but make length of vector 1
+  if (length !== 0) {
+    vec3.x /= length;
+    vec3.y /= length;
+    vec3.z /= length;
+  }
+}
+
+// update AFTER camera rotation
+//lets you move in respect to your camera rotation
+function updateRotationVector3s() {
+
+  // annoying math to get forward vec
+  forwardVec3.x = Math.cos(me.rotation.x) * Math.cos(me.rotation.y);
+  forwardVec3.y = Math.sin(me.rotation.y);
+  forwardVec3.z = Math.sin(me.rotation.x) * Math.cos(me.rotation.y);
+  
+  // right vector is cross product of forward and world up
+  rightVec3.x = -Math.sin(me.rotation.x);
+  rightVec3.y = 0;
+  rightVec3.z = Math.cos(me.rotation.x);
+
+  //up vcector is just the cross product of right and forwards
+  upVec3.x = -forwardVec3.x * rightVec3.y + forwardVec3.y * rightVec3.x;
+  upVec3.y = -forwardVec3.z * rightVec3.x + forwardVec3.x * rightVec3.z;
+  upVec3.z = -forwardVec3.y * rightVec3.z + forwardVec3.z * rightVec3.y;
+  
+  // normalize
+  normalizeVector3(forwardVec3);
+  normalizeVector3(rightVec3);
+  normalizeVector3(upVec3);
+}
+
+//click to hide mouse and prevent it going offscreen
 function mousePressed() {
-  //console.log(me)
-  
-  //console.log(partyLoadGuestShareds())
   requestPointerLock()
+}
 
+
+//move in the direction you press based on your forward, right, or up vectors
+function fly(xDir, yDir, zDir, direction) {
+  let vec3 = forwardVec3;
+  //originally i used actual deltatime, but it looked choppy
+  let delta = 1//deltaTime/100
+  if (direction === "right") {
+    vec3 = rightVec3;
+  } else if (direction === "up") {
+    vec3 = upVec3;
+  }
+  me.position.x += (vec3.x * FLY_SPEED) * xDir * delta;
+  me.position.y += (vec3.y * FLY_SPEED) * yDir * delta;
+  me.position.z += (vec3.z * FLY_SPEED) * zDir * delta;
   
 }
-let camAngle = 0;
-//this could leave some things undetected if players join 
+
+
+//use inputs and draw the scene
 function draw() {
-  background(40);
-  
-  // https://github.com/processing/p5.js/wiki/Getting-started-with-Webgl-in-p5
-  // https://processing.org/tutorials/p3d
-  //background(0);
- 
-  mouseCaptured = false
-    
-    //console.log( directionY)
-    //let tilt = Math.abs(directionY) <= 0.97 || Math.sign(movedY) !== Math.sign(directionY) ? movedY : 0;
-    //console.log(-movedX * camSensitivity)
+  background(BACKGROUND_COLOUR);
 
-    let directionY = (myCam.centerY - myCam.eyeY + movedY*camSensitivity) / 530
-    
-    
-    let rotationX = -movedX * camSensitivity
-    let rotationYAlt = Math.abs(directionY) <= 0.7 || Math.sign(movedY) !== Math.sign(directionY) ? movedY * camSensitivity : 0;
-    let rotationY = -movedY * camSensitivity
+  updateRotations()
+  updateCamera()
+  updateRotationVector3s()
 
-    let deltaX = movedX;
-    camAngle += deltaX * 0.01;
-    me.rotation.x += rotationX
-    //me.rotation.y += rotationY
-    me.rotation.y -= rotationYAlt
-    //console.log(camAngle, me.rotation.x)
+  //move
+  getKeyPresses()
 
-    console.log(Math.cos(me.rotation.y) * 720)
-    myCam.setPosition(
-      me.position.x  + Math.cos(me.rotation.x) * -400 * Math.cos(me.rotation.y), 
-      me.position.y - 200 + Math.sin(me.rotation.y) * -400, 
-      me.position.z + Math.sin(me.rotation.x) * 400 * Math.cos(me.rotation.y),
-    )
-    //myCam.tilt(rotationY)
-    //https://diwi.github.io/p5.EasyCam/
-    myCam.lookAt(
-      me.position.x, 
-      me.position.y - 200, 
-      me.position.z
-    )
+  drawPlayers()
+  drawMap()
+}
 
 
-    console.log(
-      me.rotation.x % 4, 
-      Math.PI/2,
-      me.rotation.y, 
-      me.rotation.z)
-    
-    //the camera pan and tilt is innacturately described and pans the more its been tilted WHO WROTE THIS
-    //s
-    let pos = me.position
-    //myCam.camera(pos.x,pos.y-300,pos.z+400, -me.rotation.x, me.rotation.y, me.rotation.z, 0, 1 ,0)
-    //myCam.pan(rotationX)
-    
-    if (keyIsDown(68)) {
-      me.position.x += flySpeed
-    }
-    if (keyIsDown(65)) {
-      me.position.x -= flySpeed
-    }
-    if (keyIsDown(83)) {
-      me.position.z += flySpeed
-    }
-    if (keyIsDown(87)) {
-      me.position.z -= flySpeed
-    }
-    // myCam.move(
-    //   // D - right, A - left 
-    //   (keyIsDown(68) ? flySpeed : 0) + (keyIsDown(65) ? -flySpeed : 0),
-    //   // Q - down, E - up
-    //   (keyIsDown(81) ? flySpeed : 0) + (keyIsDown(69) ? -flySpeed : 0),
-    //   // S - backward, W - forward
-    //   (keyIsDown(83) ? flySpeed : 0) + (keyIsDown(87) ? -flySpeed : 0)
-    // );
+//show all players
+function drawPlayers() {
+  for (let player of partyLoadGuestShareds()) {
+    let pos = player.position
+    let rot = player.rotation
+
     push();
-    //WHENERVJHE I TRY TO TYPE OUT "TRANSLATE()" IT AUTOCORRECTS TO A DIFFERENT THING BUT DOESNT AUTOFILL
-    //WHO WROTE THIS
-    translate (0,0, -200, )
-    box(200);
-    pop();
-    box(200);
-    for (let player of partyLoadGuestShareds()) {
-      let pos = player.position
-      push();
       translate (pos.x,pos.y, pos.z)
-      rotateY(player.rotation.x)
-      //someone at the team decided that rotateY (Y btw) should rotate blocks on right and left
+
+      //someone at the team decided that rotateY (Y btw) should rotate models on right and left
       //i will hate that person forever
-      rotateZ(player.rotation.y)
-      fill("red")
-      console.log(player.model)
-      MODELS[player.model](200)
-      pop();
-      
+      rotateY(rot.x)
+      rotateZ(rot.y)
+      fill(PLAYER_COLOUR)
+      MODELS[player.model](PLAYER_SIZE)
+    pop();
+  }
+}
+
+//show the map
+function drawMap() {
+  push();
+  //put the environment directly under you
+  translate (MAP_WIDTH*BLOCK_SIZE/2, MAX_BLOCK_HEIGHT * BLOCK_SIZE, -MAP_LENGTH*BLOCK_SIZE/2)
+
+  let totalBlocks = 0;
+  for (let x = 0; x<environment.length; x++) {
+    translate (-BLOCK_SIZE,0, 0)
+    let height = 0;
+    for (let z = 0; z<environment[x].length; z++) {
+      translate (0, 0, BLOCK_SIZE)
+      height = environment[x][z]
+
+      //build up higher
+      for (let y = 0; y<height; y++) {
+        translate (0, -BLOCK_SIZE, 0)
+
+        //use the assign colour, or make one if it doesnt yet exist
+        let colour = blockColours[totalBlocks] || blockColours[blockColours.push([random()*255,random()*255,random()*255]) - 1]
+        totalBlocks += 1
+        fill(...colour)
+
+
+        box(BLOCK_SIZE)
+      }
+      //reset translations for y
+      translate (0,BLOCK_SIZE*height, 0)
     }
-  // camera(mouseX, height/2, (height/2) / tan(PI/6), mouseX, height/2, 0, 0, 1, 0);
-  // translate(width/2, height/2, -100);
-  // stroke(255);
-  // noFill();
-  
-
-  //drawText()
-
-}
-
-function mouseDragged() {
-  
-
-  
-  //camera(dragX, mouseY, (height/2) / tan(PI/6), width/2, height/2, 0, 0, 1, 0);
+    //reset translations for z
+    translate (0, 0, -BLOCK_SIZE*environment[x].length)
+  }
+  totalBlocks = 0
+  pop();
 }
 
 
 
 
-function safeMath(num){
-  return Math.abs(num) < 1 ? 0 :num
+//actiavate keys based on defined 'activate' function
+function getKeyPresses() {
+  //for some reason you have to do Object.keys before iterating through an object in js.
+  for (let code of Object.keys(KEY_CODES)) {
+    if (keyIsDown(code)) {
+      let keybindData = KEY_CODES[code]
+
+      //use func with set args
+      keybindData.activate(...keybindData.args)
+    }
+  }
 }
 
+//update the camera as you rotate the mouse
+function updateCamera() {
+  //decide how far forward, left, and up the cam should be based on rotation
+  //'turning around a point'
+  myCam.setPosition(
+    me.position.x + Math.cos(me.rotation.x) * -CAM_DIST_Z * Math.cos(me.rotation.y), 
+    me.position.y + (Math.sin(me.rotation.y) * -CAM_DIST_Z) - CAM_DIST_Y, 
+    me.position.z + Math.sin(me.rotation.x) * CAM_DIST_Z * Math.cos(me.rotation.y),
+  )
+  
+  //point at the players model
+  myCam.lookAt(
+    me.position.x, 
+    me.position.y - CAM_DIST_Y, 
+    me.position.z
+  )
+}
+
+//update self rotation before updating camera itself (camera is based on this anyways)
+function updateRotations() {
+  let rotationX = -movedX * CAM_SENSITIVITY
+  let directionY = (myCam.centerY - myCam.eyeY + movedY*CAM_SENSITIVITY) / 530
+
+  //prevent you from rotating infinitly in the y and inverting your stuff (hopefully...)
+  let rotationY = Math.abs(directionY) <= 1.3 || Math.sign(movedY) !== Math.sign(directionY) ? -movedY * CAM_SENSITIVITY : 0;
+
+  me.rotation.x += rotationX
+  me.rotation.y -= rotationY
+}
