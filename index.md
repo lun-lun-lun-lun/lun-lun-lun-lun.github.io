@@ -15,4 +15,4 @@
 # cs30 Projects
 - [Interactive Scene](InteractiveScene-BouncingBalls)
 - [defunct](new-try)
-- [2D Grid Assignment](new-try)
+- [2D Grid Assignment](multiplayer-flying)
