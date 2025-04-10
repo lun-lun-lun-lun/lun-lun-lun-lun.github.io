@@ -11,8 +11,8 @@
 - [Rectangle Grid](10-rectangle-grid)
 - [Conway's Game of Life](11-game-of-life)
 - [Character moving in grid](12-character-grid)
+- [Multiplayer Flying](multiplayer-flying)
 
 # cs30 Projects
 - [Interactive Scene](InteractiveScene-BouncingBalls)
-- [defunct](new-try)
 - [2D Grid Assignment](multiplayer-flying)
