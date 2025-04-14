@@ -453,6 +453,8 @@ export default [
       "no-var": ["error"],
       "no-cond-assign": ["error", "always"],
       "no-unused-vars": "off",
+      'indent': ['error', 2],
+      '@stylistic/js/indent': ['error', 2],
     },
   },
 ];
