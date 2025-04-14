@@ -13,6 +13,7 @@
 - [Character moving in grid](12-character-grid)
 - [Multiplayer Flying](multiplayer-flying)
 - [Walker OOP](15-walker)
+- [Fireworks](16-fireworks)
 
 # cs30 Projects
 - [Interactive Scene](InteractiveScene-BouncingBalls)
