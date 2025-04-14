@@ -12,6 +12,7 @@
 - [Conway's Game of Life](11-game-of-life)
 - [Character moving in grid](12-character-grid)
 - [Multiplayer Flying](multiplayer-flying)
+- [Walker OOP](15-walker)
 
 # cs30 Projects
 - [Interactive Scene](InteractiveScene-BouncingBalls)
