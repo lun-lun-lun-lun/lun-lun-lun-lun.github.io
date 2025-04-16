@@ -1,3 +1,5 @@
+import stylisticJs from '@stylistic/eslint-plugin-js'
+
 export default [
   {
     ignores: ["node_modules/**"],
@@ -442,8 +444,10 @@ export default [
         year: "readonly"
       },
     },
+    plugins: {
+      '@stylistic/js': stylisticJs
+    },
     rules: {
-      indent: ["warn", 2],
       semi: ["warn", "always"],
       "no-extra-parens": ["warn", "all"],
       curly: ["warn", "all"],
@@ -453,8 +457,8 @@ export default [
       "no-var": ["error"],
       "no-cond-assign": ["error", "always"],
       "no-unused-vars": "off",
-      'indent': ['error', 2],
-      '@stylistic/js/indent': ['error', 2],
+      'indent': ['warn', 2],
+      '@stylistic/js/indent': ['warn', 2]
     },
   },
 ];
